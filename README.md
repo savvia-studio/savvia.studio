@@ -14,7 +14,7 @@ Compartimos el código para desarrolladores y diseñadores que quieran ver cómo
 
 ## Cómo se hizo
 
-Hicimos la web entera con Claude Code, por rondas. Cada ronda empieza con una petición de Eric o de Andoni («hay que dar más aire al hero», «que el cambio de estación parezca que se pinta»). El agente la resuelve y la comprobamos en un navegador real.
+Hicimos la web entera con Claude Code, por rondas. Cada ronda empieza con una petición de Eric o de Andoni. El agente la resuelve y la comprobamos en un navegador real.
 
 Tres archivos sostienen el proyecto.
 

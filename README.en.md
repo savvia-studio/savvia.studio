@@ -14,7 +14,7 @@ We are sharing the code for developers and designers who want to see how a bespo
 
 ## How it was built
 
-We built the whole website with Claude Code, in rounds. Each round starts with a request from Eric or Andoni ("the hero needs more air", "make the season change look like it is being painted"). The agent works it out and we check it in a real browser.
+We built the whole website with Claude Code, in rounds. Each round starts with a request from Eric or Andoni. The agent works it out and we check it in a real browser.
 
 Three files hold the project together.
 
