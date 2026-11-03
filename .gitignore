@@ -1,0 +1,96 @@
+# build output
+dist/
+# generated types
+.astro/
+
+# dependencies
+node_modules/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+
+# environment variables
+.env
+.env.production
+
+# macOS-specific files
+.DS_Store
+
+# jetbrains setting folder
+.idea/
+
+# herramientas de verificación
+tools/shots/
+
+# grabaciones en bruto de las webs (se regeneran con tools/grabar-paso.cjs) y los vídeos de testimonio retirados (nombran el estudio anterior)
+tools/grab/
+tools/retirados/voces/
+
+# Vercel (el enlace al proyecto se copia en dist/ al publicar)
+.vercel/
+# reel (ronda 60): planos grabados, copias en el proyecto de HyperFrames, renders y capturas (se regeneran con tools/reel/grabar.cjs y montar.cjs)
+tools/reel/planos/
+tools/reel/hf/assets/*.mp4
+tools/reel/hf/renders/
+tools/reel/hf/snapshots/
+
+# ronda 75: material en bruto (láminas originales de Andoni, tomas del reel, capturas): se queda en local
+tools/r66/
+tools/reel/momentos/
+tools/reel/hf/
+tools/reel/*.mp3
+tools/tools/
+
+# ShipStudio metadata
+.shipstudio/
+
+# rondas 137–141: fuentes de los fotogramas de Eric y Andoni y sus intermedios (pesados; se quedan en local)
+node_modules
+tools/r138-equipo/
+tools/r140-equipo/fuente/
+tools/r141-equipo/fuente/
+tools/r137-equipo/out*/
+tools/**/*.npy
+
+# capturas de revisión de las rondas (no se publican)
+tools/r1*/shots/
+HANDOFF-*.md
+tools/r189-equipo/fuente/
+tools/r206/fuente/
+
+# rondas 233–262: material del reel (proyectos HyperFrames, renders, tomas, capturas) y copias retiradas: se quedan en local; se versionan los scripts
+tools/r233/hf/
+tools/r233/agentic-fr/
+tools/r233/alt/
+tools/r233/alt2/
+tools/r233/hoja/
+tools/r233/*.mp4
+tools/r233/*.jpg
+tools/r234-reel/hf/
+tools/r238-cinetico/hf/
+tools/r238-cinetico/neety/
+tools/r238-cinetico/*.mp4
+tools/r238-cinetico/*.jpg
+tools/retirados/reel-r152/
+tools/retirados/reel-r237/
+
+# ronda 265-266: capturas y grabaciones en bruto del kit y del motion (se regeneran con sus scripts)
+tools/r265-kit/out/
+tools/r266-motion/tmp/
+
+# ronda 276: renders y material pesado de las aficiones y del reel nuevo (se regeneran con sus scripts)
+tools/blender/out/
+tools/r265-reel/hf/assets/
+tools/r265-reel/hf/renders/
+tools/r265-reel/hf/snaps*/
+tools/r265-reel/hf/.hyperframes/
+tools/r265-reel/musica/
+tools/r265-reel/*.mp4
+.vercel
+tools/favicon-arbol/hero-*.png
+tools/firma/estaciones/
+tools/casos-concepto/fuentes-andoni/

@@ -1,0 +1,173 @@
+---
+// RAÍCES (ronda 13) · la mitad de abajo de la ACUARELA del hero (`hero-raices.webp`, `tools/recorte-hero.py`): mismo ancho y mismo eje que el
+// árbol, así casan bajo la línea de suelo. RONDA 39: ya no se componen con el scroll: están pintadas y siguen la estación de la web.
+---
+
+<!-- RONDA 19 · el EJE de la raíz principal, medido en la lámina (fracciones de la caja): baja recto bajo el tronco, entra en la masa de raíces y
+     sigue por la que llega más abajo hasta su punta. Por él resbala la gota que despierta las tarjetas (Recorrido.astro). -->
+<div class="raices" aria-hidden="true" data-raices data-carril-fila="sin-cruces" data-eje="[[0.507,0],[0.505,0.18],[0.501,0.36],[0.497,0.52],[0.4937,0.6787],[0.5063,0.7064],[0.4984,0.7341],[0.5048,0.7618],[0.5087,0.7895],[0.5056,0.8172],[0.5095,0.8449],[0.5087,0.8726],[0.5071,0.8892]]">
+  <div class="caja" data-raices-caja>
+    <!-- (30/10 · rendimiento en móvil) dos tamaños, como el roble del hero: -m (880 px) en el móvil -->
+    <img alt="" width="1260" height="361" decoding="async" loading="lazy" sizes="(width < 64rem) 432px, 1260px" data-lamina />
+    <script is:inline>(function (i, e) { i.srcset = '/media/hero/raices-' + e + '-m.webp 880w, /media/hero/raices-' + e + '.webp 1260w'; i.src = '/media/hero/raices-' + e + '.webp'; })(document.currentScript.previousElementSibling, document.documentElement.dataset.estacion || 'otono');</script>
+    <canvas data-lienzo></canvas>
+  </div>
+</div>
+
+<script>
+  import { crearEstela, ESTACIONES_SIN_RALEO } from '../scripts/estela';
+  import { EST, NOCHE, estacionActual } from '../scripts/estacion';
+  // RONDA 39 · «en el hero las raíces se sincronizan con cada estación del año y ya no aparecen en scroll, son fijas; en scroll mantenemos solo
+  // la gota»: las raíces están PINTADAS desde el principio (sin frente atado al scroll) y viran con la estación de la web, con el mismo frente
+  // rasgado que la copa, que aquí baja desde el cuello. Son las mismas estelas de la acuarela: viran como las hojas, pero no ralean en invierno.
+  const raiz = document.querySelector<HTMLElement>('[data-raices]');
+  if (raiz) {
+    let cv = raiz.querySelector<HTMLCanvasElement>('[data-lienzo]')!;
+    const img = raiz.querySelector<HTMLImageElement>('[data-lamina]')!;
+    const reducido = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // RONDA 47 · `soplo` = el hervor de la copa; `sinLuz`: bajo tierra no entran los haces. RONDA 66 · la lámina de cada estación (intensidad 0: el color
+    // ya viene pintado); al cambiar, las raíces nuevas se pintan desde el cuello encima de las viejas, 0,7 s después que la copa.
+    // RONDA 81 · Andoni: «las raíces del hero ahora no se ajustan con la estación» (medido: las cuatro salían del mismo marrón rojizo mientras la copa se
+    // nieva, florece o reverdece). Ahora el motor tiñe la raíz en el color de la estación, más suave que la copa (en otoño, la lámina tal cual)
+    // RONDA 181 · las raíces se hunden en la TIERRA (global.css › --tierra), no en la noche
+    const tierra = (n: number) => NOCHE[n].map((c) => Math.round(c * (n === 1 ? 0.93 : 0.7))) as [number, number, number];
+    const TINTE = [0, 0.8, 0.65, 0.5]; // otoño · invierno · primavera · verano
+    // RONDA 178 · Eric: «en invierno las raíces tienen dithering que no tiene la parte de arriba»: como el árbol, sin hervor ni semitono en invierno
+    // RONDA 180 · Eric: sin la franja de puntos bajo la línea de suelo (80 px limpios, fundidos)
+    const OPC = (n: number) => ({ origen: [0.5, 0] as [number, number], dir: 1 as const, soplo: n !== 1, nitido: n === 1, limpioArriba: 80, sinLuz: true, estaciones: ESTACIONES_SIN_RALEO, intensidad: TINTE[n] });
+    // RONDA 181 · Eric: «con scroll rápido aparece la raíz de los Dolores antes de que se generen las raíces del árbol»: avisamos cuando están pintadas
+    const listas = () => { if ((window as any).__raicesListas) return; (window as any).__raicesListas = true; dispatchEvent(new Event('savvia:raices-listas')); };
+    const ponLamina = (n: number) => { const b = `/media/hero/raices-${EST[n]}`; img.srcset = `${b}-m.webp 880w, ${b}.webp 1260w`; img.src = `${b}.webp`; };
+    // (30/10 · rendimiento en móvil) como el roble: el programa WebGL se compila con el hilo libre tras el primer pintado, no al evaluar el módulo
+    const arranque = () => {
+    if (!img.src.includes(`raices-${EST[estacionActual()]}`)) ponLamina(estacionActual()); // si la estación cambió mientras tanto
+    let t = crearEstela(cv, img, OPC(estacionActual()));
+    t?.estacion(estacionActual());
+    if (!t) { raiz.classList.add('sin-gl'); listas(); }
+    else {
+      let est = estacionActual(), visible = false, pedida = -1;
+      // RONDA 83 · Eric: «la parte de abajo del árbol también debería crecer para abajo, al igual que el árbol crece para arriba»: las raíces ya no están
+      // pintadas desde el principio: se DIBUJAN y se PINTAN hacia abajo desde el cuello, con el reloj y la curva del árbol (3,6 s), cuando el árbol ha
+      // empezado a brotar (`savvia:gota`; sin carga, tras la parrilla) Y las raíces asoman en pantalla (quedan bajo el pliegue: si no, nadie lo vería).
+      // Por tiempo, una sola vez; no van atadas al scroll (ronda 39). Si la página se abre ya más abajo, pintadas sin más.
+      const CRECE = 3600;
+      let g = reducido ? 1 : 0, suelta = false, asomada = false, creciendo = false;
+      if (reducido) listas();
+      t.crecer(g);
+      const arrancar = () => {
+        if (creciendo || g >= 1 || !suelta || !asomada) return;
+        creciendo = true;
+        let k = 0, antes = 0;
+        // RONDA 181 · Eric: «la segunda sección no carga hasta muy tarde»: si ya has bajado (las raíces quedan en la mitad de arriba), terminan ×5 más deprisa
+        const paso = (ahora: number) => {
+          const dt = antes ? ahora - antes : 0; antes = ahora;
+          const prisa = raiz.getBoundingClientRect().bottom < innerHeight * 0.5 ? 5 : 1;
+          k = Math.min(1, k + (dt * prisa) / CRECE);
+          g = 1 - Math.pow(1 - k, 1.6); t?.crecer(g);
+          if (k < 1) requestAnimationFrame(paso); else { g = 1; t?.crecer(1); listas(); }
+        };
+        requestAnimationFrame(paso);
+      };
+      if (!reducido) {
+        const ESPERA = document.documentElement.classList.contains('sin-carga') ? 900 : 0; // la misma espera del árbol (Hero.astro)
+        const soltar = () => setTimeout(() => {
+          if (raiz.getBoundingClientRect().bottom < 0) { g = 1; t?.crecer(1); listas(); return; } // ya quedaron arriba: pintadas
+          suelta = true; arrancar();
+        }, ESPERA + 100);
+        if ((window as any).__gotaSuelta) soltar(); else addEventListener('savvia:gota', soltar, { once: true });
+        const asoma = new IntersectionObserver((e) => { if (e[0].isIntersecting) { asomada = true; asoma.disconnect(); arrancar(); } }, { rootMargin: '0px 0px -6% 0px' });
+        asoma.observe(raiz);
+      }
+      t.fondo(...tierra(est));
+      new IntersectionObserver((e) => { visible = e[0].isIntersecting; t?.visible(visible); }, { rootMargin: '10% 0px' }).observe(raiz);
+      const soltarLienzo = (c: HTMLCanvasElement) => { { const g = (c.getContext('webgl') || c.getContext('webgl2')); if (g && !g.isContextLost()) g.getExtension('WEBGL_lose_context')?.loseContext(); } c.remove(); };
+      addEventListener('savvia:estacion', (ev) => {
+        const n = (ev as CustomEvent).detail.n as number;
+        if (n === est) return;
+        est = n; pedida = n;
+        const nueva = new Image(); nueva.decoding = 'async'; nueva.src = `/media/hero/raices-${EST[n]}${matchMedia('(width < 64rem)').matches && devicePixelRatio <= 2 ? '-m' : ''}.webp`;
+        nueva.onload = () => setTimeout(() => {
+          if (pedida !== n || !t) return;
+          // sin verse (o a medio crecer): la lámina nueva en el mismo lienzo, sin compilar otro programa (ver estela.ts › lamina)
+          if (!visible || reducido || g < 1) {
+            const o = OPC(n); t.lamina(nueva, { soplo: o.soplo, nitido: o.nitido, intensidad: o.intensidad }); t.estacion(n);
+            ponLamina(n); t.fondo(...tierra(n));
+            return;
+          }
+          const cv2 = cv.cloneNode(false) as HTMLCanvasElement; cv2.classList.remove('listo'); cv.after(cv2); // clonado: con el atributo de ámbito de Astro
+          const t2 = crearEstela(cv2, nueva, OPC(n));
+          if (!t2) { cv2.remove(); return; }
+          t2.estacion(n);
+          const viejo = cv; cv = cv2; t = t2; ponLamina(n);
+          t2.fondo(...tierra(n)); t2.visible(visible);
+          t2.crecer(g); // a medio crecer (o sin crecer aún), el lienzo nuevo sigue desde donde iba
+          if (!visible || reducido || g < 1) return soltarLienzo(viejo);
+          // ronda 67: se descubre con el canto rasgado desde el cuello (sin el destello de líneas), como la copa
+          let a = 0, w = 0, h = 0; // medida en el primer fotograma, no en cada uno (ver revelar.ts)
+          const pon = (m: string) => { cv2.style.setProperty('-webkit-mask', m); cv2.style.setProperty('mask', m); };
+          pon(`url('/media/rasgo-circulo.webp') 0 0 / 0 0 no-repeat`);
+          const paso = (ahora: number) => {
+            if (!a) { a = ahora; w = cv2.offsetWidth; h = cv2.offsetHeight; }
+            const k = Math.min(1, (ahora - a) / 2600), e = k * k * (3 - 2 * k), S = Math.max(8, Math.hypot(w, h) * 2.4 * e);
+            pon(`url('/media/rasgo-circulo.webp') ${(w / 2 - S / 2).toFixed(1)}px ${(-S / 2).toFixed(1)}px / ${S.toFixed(1)}px ${S.toFixed(1)}px no-repeat`);
+            viejo.style.opacity = String(1 - Math.min(1, Math.max(0, (k - 0.15) / 0.75)));
+            if (k < 1) requestAnimationFrame(paso); else { pon(''); soltarLienzo(viejo); }
+          };
+          requestAnimationFrame(paso);
+        }, visible && !reducido ? 700 : 0);
+      });
+    }
+    };
+    'requestIdleCallback' in window ? requestIdleCallback(arranque, { timeout: 1200 }) : setTimeout(arranque, 250);
+  }
+</script>
+
+<style>
+  .raices {
+    position: relative;
+    /* 29/10 · la tierra (::before, z -1) iba en el contexto raíz y el fondo OPACO del <body> (barras de Safari, 29/10) la tapaba: la mancha solo se veía
+       en Proyectos, con el borde recto. Contexto propio: la tierra va detrás de la lámina y delante del body. (Los Dolores, que pedían no crearlo, ya no van.) */
+    isolation: isolate;
+    margin-top: 0; /* RONDA 16: el pie del árbol es el pie del hero; las raíces nacen justo debajo */
+    display: flex;
+    justify-content: center;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  /* ronda 181 · la tierra: empieza en seco en la línea de suelo y se apaga en elipse alrededor de las raíces (sigue en los Dolores, mismo centro) */
+  .raices::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: radial-gradient(var(--tierra-mancha) at 50% 0, var(--tierra-paradas));
+  }
+  .caja {
+    position: relative;
+    z-index: 3; /* «que las raíces del propio árbol estén por encima» de la raíz que sale de ellas */
+    flex: none;
+    width: var(--roble-w);
+    aspect-ratio: 1260 / 361;
+  }
+  canvas,
+  img {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  /* Regla dura 3: lo que coloca el JS nace invisible. La lámina solo se ve si no hay WebGL. */
+  canvas {
+    opacity: 0;
+  }
+  canvas:global(.listo) {
+    opacity: 1;
+  }
+  img {
+    opacity: 0;
+  }
+  .sin-gl img {
+    opacity: 1;
+  }
+</style>

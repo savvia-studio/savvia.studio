@@ -1,0 +1,70 @@
+---
+import { home } from '../data/idioma';
+import { langDe } from '../lib/i18n';
+const { problemas } = home(langDe(Astro.currentLocale));
+// RONDA 292 · reunión con JL: el manifiesto vive DENTRO de la sección blanca de savvia agentic (`incrustada`): sin fondo propio, mismo efecto cortina
+const { incrustada = false } = Astro.props;
+// RONDA 186 · la sección 2 como MANIFIESTO (sustituye a Dolores.astro, que queda guardado). Texto de la sesión de narrativa del 21-sep (Drive con José
+// Luis). Se ENTINTA LETRA A LETRA, en orden de lectura, atado al scroll (sin fijar nada): de la entrada de la sección a que el final del texto llega a
+// media pantalla. Cada palabra va en una pieza que no se parte; la marca ([[…]]) entera. Sin JS o con movimiento reducido: todo a plena tinta.
+type Trozo = { t: string; marca: boolean };
+const partir = (p: string): Trozo[] =>
+  p.replace(/\]\]([.,;:]+)/g, '$1]]').split(/(\[\[.*?\]\])/).filter(Boolean).flatMap((seg): Trozo[] => {
+    const marca = seg.startsWith('[[');
+    const limpio = seg.replace(/^\[\[|\]\]$/g, '');
+    return marca ? [{ t: limpio, marca }] : limpio.split(/\s+/).filter(Boolean).map((t) => ({ t, marca }));
+  });
+---
+
+<div id="problemas" class:list={['problemas', incrustada ? 'incrustada' : 'surface-dark']} role="group" aria-label={problemas.aria} data-problemas data-sin-fila>
+  <div class="wrap">
+    <div class="texto text-h2">
+      {problemas.parrafos.map((p) => (
+        <p>
+          <span class="sr-only">{p.replace(/\[\[|\]\]/g, '')}</span>
+          {partir(p).map((w) => <><span class="w" aria-hidden="true">{[...w.t].map((c) => <span class="c">{c}</span>)}</span>{' '}</>)}
+        </p>
+      ))}
+    </div>
+  </div>
+</div>
+
+<style>
+  .problemas {
+    position: relative;
+    padding-block: clamp(6rem, 3rem + 14lvh, 12rem) clamp(14rem, 8rem + 26lvh, 22rem); /* abajo, más que la gota de la sección siguiente (hasta 240 px) */
+    /* la mancha de tierra de las raíces sigue aquí, con el centro en la línea de suelo (una altura de raíces más arriba), como hacían los Dolores */
+    background-image: radial-gradient(var(--tierra-mancha) at 50% calc(-1 * var(--raices-h)), var(--tierra-paradas));
+    background-repeat: no-repeat;
+  }
+  /* dentro de savvia agentic (fondo claro): sin la mancha de tierra y con el aire justo antes de la ilustración */
+  .problemas.incrustada {
+    background-image: none;
+    padding-block: 0 clamp(1rem, 0.5rem + 3lvh, 2rem);
+  }
+  .incrustada :global(.wrap) { padding-inline: 0; max-width: none; }
+  @media (width >= 48rem) { .problemas.incrustada { padding-bottom: clamp(3rem, 2rem + 6lvh, 6rem); } } /* escritorio: «que respire todo un poco más» (móvil, como estaba) */
+  .texto {
+    max-width: 14em; /* en em del propio texto: ~28 caracteres por línea (ronda 186: «más estrecho») */
+    margin-inline: auto;
+    font-family: var(--font-display);
+  }
+  @media (width < 48rem) { .texto { font-size: 1.75rem; } } /* móvil: 28 px (Eric: «lo veo muy grande», luego «algo más pequeño»: 34 → 32 → 28) */
+  .texto p + p { margin-top: 1.1em; }
+  .w { white-space: nowrap; }
+  .c { color: var(--fg); }
+  :global(html.anima) .c { opacity: 0.2; }
+  /* Frases (ronda 209): su opacidad la lleva el scroll (script), de 0 a 1 antes de entintarse */
+  :global(html.anima) .texto p { opacity: 0; transition: opacity 0.35s ease-out; will-change: opacity; }
+  @media (prefers-reduced-motion: reduce) {
+    .c { opacity: 1 !important; }
+    :global(html.anima) .texto p { opacity: 1; transition: none; }
+  }
+</style>
+
+<script>
+  // Frase a frase, atado al scroll (src/scripts/entintar.ts › entintarFrases; el Manifiesto usa la misma)
+  import { entintarFrases } from '../scripts/entintar';
+  const texto = document.querySelector<HTMLElement>('[data-problemas] .texto');
+  if (texto) entintarFrases(texto);
+</script>

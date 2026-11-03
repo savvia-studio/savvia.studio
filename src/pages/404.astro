@@ -1,0 +1,86 @@
+---
+// RONDA 137 · LA 404 «EL TIEMPO ENCIMA» (sustituye a «El corte», ronda 136; su componente queda en src/components/404/Corte.astro, sin uso).
+// Andoni: «La página 404 que sea el 404 en grande y que en función de la estación se le acumule algo encima: invierno nieve, otoño hojas,
+// primavera flores y verano le da el solete.» El 404 en Family, de pie sobre la línea de carriles; lo que cae, en src/components/404/Cuatro.astro.
+import Base from '../layouts/Base.astro';
+import Nav from '../components/Nav.astro';
+import Carriles from '../components/Carriles.astro';
+import Cuatro from '../components/404/Cuatro.astro';
+---
+
+<Base title="Página no encontrada en savvia" description="Esta página no existe o ha cambiado de sitio. El resto de savvia sigue en su sitio." carga={false} indexar={false}>
+  <Nav />
+  <Carriles />
+  <main id="contenido" class="surface-dark perdida">
+    <section class="tiempo" data-sin-fila data-cuatro-zona aria-labelledby="perdida-h">
+      <Cuatro />
+      <div class="hueco" data-cuatro-hueco aria-hidden="true"></div>
+      <!-- fuera el titular, la frase y los botones («no suma»); la fila queda como suelo del 404 y el h1 solo para lectores -->
+      <div class="wrap texto" data-carril-fila data-cuatro-suelo>
+        <h1 id="perdida-h" class="font-display sr"><span data-en="Error 404. This page does not exist.">Error 404. Esta página no existe.</span></h1>
+      </div>
+    </section>
+  </main>
+  <!-- sin pie: en el 404 no hay footer (Eric) -->
+  <!-- una sola URL para los dos idiomas: el HTML lleva el castellano y, antes del primer pintado, esto lo pasa a inglés si la dirección de origen era /en/ o la cookie/almacén dicen «en» -->
+  <script is:inline>
+    (function () {
+      var en = false;
+      try {
+        var ref = document.referrer ? new URL(document.referrer) : null;
+        en = /^\/en(\/|$)/.test(location.pathname) || /(?:^|; )savvia-lang=en/.test(document.cookie) || localStorage.getItem('savvia-lang') === 'en' || (!!ref && ref.origin === location.origin && /^\/en(\/|$)/.test(ref.pathname));
+      } catch (e) {}
+      if (!en) return;
+      document.documentElement.lang = 'en';
+      document.title = 'Page not found on savvia';
+      var d = document.querySelector('meta[name="description"]');
+      if (d) d.setAttribute('content', 'This page does not exist or has moved. The rest of savvia is right where it was.');
+      var marca = document.querySelector('a.marca'); if (marca) { marca.setAttribute('href', '/en/'); marca.setAttribute('aria-label', 'savvia, home'); }
+      document.querySelectorAll('[data-en]').forEach(function (el) {
+        var cta = el.querySelector('.btn-tx');
+        (cta || el).textContent = el.getAttribute('data-en');
+        var h = el.getAttribute('data-en-href');
+        if (h) el.setAttribute('href', h);
+      });
+    })();
+  </script>
+</Base>
+
+<style>
+  .tiempo {
+    position: relative;
+    overflow: hidden;
+    min-height: 100lvh;
+    display: flex;
+    flex-direction: column;
+    padding-top: calc(var(--spacing) * 24);
+    padding-bottom: calc(var(--spacing) * 32); /* el 404 y su línea, más arriba: aire debajo */
+  }
+  /* el sitio del 404: el lienzo cubre toda la sección; esto reserva su alto (las cifras se apoyan en la línea de abajo) */
+  .hueco {
+    flex: 1 0 clamp(14rem, 50lvh, 40rem);
+  }
+  .texto {
+    position: relative;
+    z-index: 2;
+  }
+  .sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  @media (max-width: 47.99rem) {
+    /* en el móvil el 404 lo limita el ancho: las cifras van centradas en la pantalla, sin un vacío arriba */
+    .tiempo {
+      justify-content: center;
+      padding-bottom: calc(var(--spacing) * 14);
+    }
+    .hueco {
+      flex: 0 0 auto;
+      height: clamp(12rem, 54vw, 18rem);
+    }
+  }
+</style>

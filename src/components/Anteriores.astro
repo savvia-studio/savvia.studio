@@ -1,0 +1,1671 @@
+---
+// OTROS TRABAJOS (rondas 17–18). Andoni: «otros trabajos lo quiero mostrar más estilo agencia creativa […] northmail.app, como tienen la sección
+// "Channels designed for life's moments": así quiero mostrar los proyectos. Con mockups, gradientes de ese estilo».
+// Referencia medida: titular grande arriba a la izquierda; MOSAICO asimétrico sobre 12 columnas (piezas de tamaños distintos, escalonadas, con
+// mucho aire); cada pieza = una imagen con el nombre GRANDE encima, arriba a la izquierda, y un pie pequeño debajo; la primera pieza es un
+// degradado de aerógrafo con un icono y el texto de entrada.
+// RONDA 18 · «le tenemos que dar más aire […] y no podemos usar el mismo gradiente en todos. Lo ideal sería usar en algunas imágenes un mockup
+// con fondo realista como el que hemos puesto con estaciones. Tener variedad. Y que entren con alguna animación»:
+//   · TRES tipos de pieza: `escena` (la mesa de Andoni en una estación, con la web del cliente DENTRO del monitor: la pantalla está medida
+//     en la lámina), `claro` (degradado pálido, navegador RECTO y cortado por abajo, nombre en Cacao) y `mancha` (degradado intenso u oscuro,
+//     navegador ladeado). Ninguna repite fondo. Iris no entra (significa «la IA»). Excepción consciente a «sin degradados» de DESIGN.md.
+//   · AIRE: piezas más estrechas, tres filas escalonadas con huecos de columna vacíos y 128 px entre filas.
+//   · ENTRADA: cada pieza se descubre de abajo arriba (recorte), su fondo llega ampliado y se asienta, y el mockup sube después.
+// RONDA 19 · Andoni: «las barras de los navegadores son muy gordas y en Remerge deberíamos enseñar la versión móvil. Luego estaría guay que al
+// hacer hover se viera el vídeo de cada proyecto». Y dos láminas más de la mesa: un MÓVIL en la mesa y un iMac en la mesa de ROBLE.
+//   · Cada pieza lleva el VÍDEO real de la web del cliente (Chrome real recorriendo la página, `tools/grabar-otros.cjs` → mp4 de 7 s, sin
+//     sonido; Remerge grabada a 390 px como móvil). Se reproduce al pasar el cursor o enfocar; en táctil, mientras la pieza está a la vista.
+//     El primer fotograma es el póster. (brag redibuja la web en HTML: para webs ajenas es mejor grabar la real.)
+//   · Las pantallas del móvil y del iMac no son rectas: están en PERSPECTIVA. Sus cuatro esquinas se han medido en la lámina y de ahí sale una
+//     HOMOGRAFÍA (cuadrado unidad → cuadrilátero) que se aplica como `matrix3d`; los términos de perspectiva y traslación van en píxeles, así que
+//     dependen del tamaño real de la lámina en pantalla: el JS mide la mesa y deja la escala en `--s`.
+//   · Barras de navegador a 16 px (antes 24).
+import { home } from '../data/idioma';
+import { langDe, ruta } from '../lib/i18n';
+import { CASOS_LISTOS } from '../lib/lanzamiento';
+// 28/10 · Eric: con caso de estudio (lanzamiento.ts › CASOS_LISTOS), la card lleva al CASO, no al visor; el slug de la home es el del dominio (neety-com → neety)
+const casoDe = (c: { slug: string; dominio?: string }) => CASOS_LISTOS.find((s) => c.slug === s || c.dominio?.startsWith(`${s}.`));
+const lang = langDe(Astro.currentLocale), en = lang === 'en';
+const { proyectos } = home(lang);
+import { proyectos as OBRA } from '../data/proyectos';
+// RONDA 77 · Andoni: «donde estaban los logos pusimos el reel, pero prefiero HEROES que van rotando con el estilo del resto, rotando entre varios»: la
+// pieza de entrada es una pieza de marca más (degradado de su web + navegador que asoma), que rota entre los heroes de los destacados
+// RONDA 78 · «que todos los títulos se lean sobre el fondo»: si el fondo de su web es claro (luminancia relativa del primer color > 0,5), el nombre va en Cacao
+const claro = (hex: string) => { const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((c) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4)); return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.5; };
+const A = proyectos.anteriores;
+const T = proyectos.testimonios;
+// RONDA 292 · el slider de los 4 mentores con retrato fuera del mosaico (probado dentro y vuelto a quitar; irá a cada caso de estudio); `true` lo devuelve
+const VOZ_EN_MOSAICO = false;
+import sharp from 'sharp';
+import MESA_MOVIL from '../data/mesa-movil.json';
+// las webs que tienen grabación en móvil (<slug>-movil.mp4); las demás, en el móvil, enseñan la de escritorio recortada
+const CON_MOVIL = new Set(['remerge', 'neety-com', 'cubbo']); // ronda 204: Neety, grabada por Eric en móvil (Screen Studio, 500 × 1080) · ronda 206: Cubbo (Chrome a 390 px, tools/r189/grabar.cjs)
+// RONDA 65 · dos FRANJAS entre filas del mosaico: HECHOS Y LOGOTIPOS tras la primera (estilo minimum.run: una línea, la frase a la izquierda, los hechos
+// numerados a la derecha y el muro de logotipos en baldosas, cada logotipo una máscara en el color del texto) y TESTIMONIOS tras la tercera (la captura de
+// Andoni: franja oscura a sangre, una línea sobre cada uno, el RETRATO grabado —la imagen la prepara Andoni; sin ella, la tarjeta empieza por la cita—,
+// el nombre y el cargo). Fuera las voces que rotaban, el reproductor dormido y la flora.
+type Sitio = { col: string; ratio: string; baja: number; tipo: 'escena' | 'claro' | 'mancha' | 'movil' | 'roble' | 'tel'; g?: string; giro?: number; est?: string; zoom?: number; cy?: number; izq?: boolean; espejo?: boolean; fondo?: string; barrido?: number; m?: [number, number, number] };
+// Los DEGRADADOS salen de los colores de la web de cada cliente (home.ts › color); las escenas no llevan degradado (llevan la mesa).
+// RONDA 40 · «los testimonios ponemos menos cantidad y que sean animados y vayan rotando; si se nos ocurre alguna manera original de mostrarlos,
+// mejor»: TRES voces en un solo sitio del mosaico, junto a Isotrol. Cada cita entra palabra a palabra (el gesto de los titulares), un hilo de savia
+// mide su tiempo bajo el nombre de quien la dice, y si habla de un proyecto del mosaico, ese proyecto se SEÑALA (un punto de savia en su pie).
+const SITIO: Sitio[] = [
+  // RONDA 202 · Eric, desde el artefacto «Fondos de proyectos»: proporción, giro y el navegador colocado a mano en cada pieza (`m`: x, y y ancho, en % de la pieza)
+  { col: '1 / span 3', ratio: '1 / 1', baja: 0, tipo: 'mancha', g: 'g-marca', giro: -2.5, m: [5, 17, 111], fondo: '/media/anteriores/fondos/mas-wisable.webp' },
+  { col: '5 / span 4', ratio: '1 / 1', baja: 0, tipo: 'escena', est: 'otono', zoom: 2.88, cy: 0.5 },
+  { col: '10 / span 3', ratio: '4 / 5', baja: 32, tipo: 'mancha', g: 'g-marca', giro: 4.5, m: [10, 23, 116] },
+  { col: '2 / span 4', ratio: '4 / 5', baja: 0, tipo: 'movil', zoom: 2.3, cy: 0.47, espejo: true }, // ronda 206: Cubbo, el móvil de la mesa en ESPEJO y con la cámara más abierta (el de Neety, en cuadro cerrado)
+  { col: '8 / span 4', ratio: '1 / 1', baja: 24, tipo: 'claro', g: 'g-marca', giro: 0, m: [7, 11, 132], fondo: '/media/anteriores/fondos/mas-transcend.webp' },
+  { col: '1 / span 3', ratio: '1 / 1', baja: 8, tipo: 'mancha', g: 'g-marca', giro: -2.5, m: [6, 17, 118] },
+  { col: '5 / span 4', ratio: '3 / 4', baja: 8, tipo: 'movil', zoom: 2.5, cy: 0.5 }, // el móvil sobre la mesa; sin grabación en móvil, la de escritorio recortada
+  { col: '10 / span 3', ratio: '4 / 5', baja: 40, tipo: 'mancha', g: 'g-marca', giro: 4, m: [9, 20, 118] },
+];
+// RONDA 42 · «los testimonios no van antes de nuestros proyectos, van entre medias, y que puedas cambiar de testimonio con unas flechas muy sutiles»:
+// una fila entera en medio del mosaico (tras la primera fila de proyectos), centrada; el nombre de quien habla entre dos flechas finas.
+// la pantalla del monitor dentro de la lámina de la mesa (medida en la ronda 6)
+const PANT = { x: 0.3903, y: 0.3696, w: 0.2178, h: 0.2104 }; // ronda 26: la caja blanca entera
+const LAM = { w: 1672, h: 941 };
+const ZV = 2.5; // 27/10 · en el visor, cuánto se amplía la lámina para que el monitor llene el panel (obra/Visor.astro)
+// las pantallas en perspectiva: esquinas medidas por inundación en la lámina (px): TL · TR · BR · BL
+const QUAD: Record<string, { foto: string; q: [number, number][] }> = {
+  // 27/10 · Eric (el marco del móvil: «muy fiel a la realidad», «sin muesca», «cuidado con el 1 px en blanco», «que no se recorte tanto arriba»): las esquinas de la
+  // pantalla, MEDIDAS en la foto (una recta por borde del cristal): la caja negra 4 px por fuera y el vídeo 1 px, en src/data/mesa-movil.json (tools/mesa-movil/mascara.cjs, que hace también la máscara)
+  movil: { foto: 'mesa-movil', q: MESA_MOVIL.movil.caja as [number, number][] }, // ronda 67: esquinas de las rectas ajustadas a los cuatro bordes de la pantalla (antes, las de dentro del redondeo)
+  'movil-espejo': { foto: 'mesa-movil-espejo', q: MESA_MOVIL['movil-espejo'].caja as [number, number][] }, // ronda 206: la lámina del móvil volteada (x' = 1672 − x; esquinas TL·TR·BR·BL reordenadas)
+  roble: { foto: 'mesa-roble', q: [[792, 274], [1220, 249], [1212, 535], [781, 519]] },
+};
+// homografía del cuadrado unidad al cuadrilátero (Heckbert): x' = (a·u + b·v + c) / (g·u + h·v + 1)
+function homografia(p: [number, number][]) {
+  const [[x0, y0], [x1, y1], [x2, y2], [x3, y3]] = p;
+  const dx1 = x1 - x2, dx2 = x3 - x2, dx3 = x0 - x1 + x2 - x3, dy1 = y1 - y2, dy2 = y3 - y2, dy3 = y0 - y1 + y2 - y3;
+  const det = dx1 * dy2 - dx2 * dy1;
+  const g = (dx3 * dy2 - dx2 * dy3) / det, h = (dx1 * dy3 - dx3 * dy1) / det;
+  return { a: x1 - x0 + g * x1, b: x3 - x0 + h * x3, c: x0, d: y1 - y0 + g * y1, e: y3 - y0 + h * y3, f: y0, g, h };
+}
+// la caja de la pantalla (px de la lámina) y la matriz que la lleva a sus esquinas; los términos con píxeles se dejan como variables
+function escenaQuad(k: string) {
+  const { q } = QUAD[k];
+  const x0 = Math.min(q[0][0], q[3][0]), y0 = Math.min(q[0][1], q[1][1]), x1 = Math.max(q[1][0], q[2][0]), y1 = Math.max(q[2][1], q[3][1]);
+  const W = x1 - x0, H = y1 - y0;
+  const n = q.map(([x, y]) => [(x - x0) / W, (y - y0) / H] as [number, number]);
+  const m = homografia(n);
+  const r = (v: number) => +v.toFixed(6);
+  // matrix3d(m11 m12 m13 m14 · m21 m22 m23 m24 · m31… · m41 m42 m43 m44): x' = m11x + m21y + m41; w' = m14x + m24y + 1
+  const matriz = `matrix3d(${r(m.a)}, ${r((m.d * H) / W)}, 0, calc(${r(m.g / W)} / var(--s)), ${r((m.b * W) / H)}, ${r(m.e)}, 0, calc(${r(m.h / H)} / var(--s)), 0, 0, 1, 0, calc(${r(m.c * W)} * var(--s)), calc(${r(m.f * H)} * var(--s)), 0, 1)`;
+  return { x0, y0, W, H, cx: (x0 + x1) / 2 / LAM.w, cy: (y0 + y1) / 2 / LAM.h, matriz };
+}
+// el paisaje barrido de la variante v en las cuatro estaciones (el CSS elige el de la estación de la web)
+const BARRIDO = (v: number) => ['primavera', 'verano', 'otono', 'invierno'].map((e) => `--b-${e}:url('/media/anteriores/fondos/barrido-${v}-${e}.webp')`).join(';');
+// 27/10 · las escenas que no son la propia de cada card (el botoncito): el navegador de las cards de mesa, por proporción; y el vídeo de escritorio o de móvil
+const NAV_ALT: Record<string, [number, number, number]> = { '1 / 1': [6, 17, 118], '4 / 5': [10, 23, 116], '3 / 4': [9, 20, 118] };
+// las que tienen grabación en móvil (`<slug>-movil.mp4`, con su póster `.jpg`): si el póster se lee, la hay (como la toma grande del visor)
+// 29/10 · Eric: sin móvil aunque haya grabación, las que no convencen en el teléfono (Home of Ambrose, Transcend, Isotrol y GOW; igual que en Portfolio.astro › SIN_MOVIL)
+const SIN_MOVIL = new Set(['home-of-ambrose', 'transcend-network', 'isotrol', 'gow-delivery']);
+const GRABADA_MOVIL = new Set((await Promise.all(A.filter((c) => !SIN_MOVIL.has(c.slug)).map((c) => sharp(`public/media/anteriores/video/${c.slug}-movil.jpg`).metadata().then(() => c.slug, () => '')))).filter(Boolean));
+const NAV_GIRO: Record<string, number> = { '1 / 1': -2.5, '4 / 5': 4.5, '3 / 4': 4 };
+const vid = (c: { slug: string; n: string }, movil: boolean) => `<video class="vid" muted loop playsinline preload="none" data-poster="/media/anteriores/video/${c.slug}${movil ? '-movil' : ''}.jpg" width="${movil ? 390 : 960}" height="${movil ? (c.slug === 'cubbo' ? 798 : 844) : 600}" aria-label="${en ? `Walkthrough of the ${c.n} website` : `Recorrido por la web de ${c.n}`}" data-vid><source src="/media/anteriores/video/${c.slug}${movil ? '-movil' : ''}.mp4" type="video/mp4" /></video>`;
+import { flecha } from '../lib/flecha';
+import Cuadricula from './Cuadricula.astro'; // ronda 296: la cuadrícula, en su componente (también va en /proyectos)
+import { icono } from '../lib/iconos';
+---
+
+<section id="anteriores" class="surface-light section-y anteriores" aria-labelledby="ant-h" data-sin-fila>
+  <div class="wrap">
+    <!-- RONDA 189 · Eric: «después del mockup deberíamos poner el grid de reviews y demás»: la cuadrícula (citas, logotipos y cifras) abre la
+         sección, justo tras Proyectos destacados; antes iba tras la primera fila del mosaico -->
+    <!-- RONDA 24 · «ver todos los proyectos a la derecha del titular pegado a la línea derecha, con una animación más fluida, como que se rellena de
+         naranja, y la flecha más minimalista» -->
+    <!-- RONDA 190 · «quita el titular "Más proyectos"» + «deja el espacio que ocupaba en blanco»: el titular sigue ocupando su sitio,
+         invisible (aria-labelledby lo sigue leyendo aunque esté oculto) -->
+    <div class="cabecera flex flex-wrap items-end justify-between gap-6 hidden">
+      <h2 id="ant-h" class="text-h1 max-w-[12ch] mt-24 lg:mt-32 invisible">{proyectos.titulo2}</h2>
+    </div>
+    <div class="mosaico">
+      <!-- RONDA 191 · Eric: «aquí a la izquierda quitamos lo de destacados y ponemos Home of Ambrose con otro gradiente y el vídeo»: fuera la pieza de
+           entrada que rotaba (rondas 77–191); su sitio (columnas 1–3, cuadrada) lo ocupa Home of Ambrose como una pieza más (SITIO[0]) -->
+      {
+        A.map((c, i) => {
+          const s = SITIO[i];
+          // escena: la lámina se amplía `zoom` veces y se coloca para que el centro de la pantalla caiga en (50 %, cy) de la pieza
+          const Z = s.zoom ?? 3;
+          const clave = s.espejo ? 'movil-espejo' : s.tipo;
+          const quad = s.tipo === 'movil' || s.tipo === 'roble' ? escenaQuad(clave) : null;
+          const cx = quad ? quad.cx : PANT.x + PANT.w / 2, py = quad ? quad.cy : PANT.y + PANT.h / 2, left = 50 - cx * Z * 100;
+          const esMovil = (s.tipo === 'movil' || s.tipo === 'tel') && CON_MOVIL.has(c.slug);
+          // el VÍDEO de la web (con su primer fotograma de póster); Remerge, grabada como móvil. (Como HTML: Astro no renderiza funciones JSX.)
+          const video = `<video class="vid" muted loop playsinline preload="none" data-poster="/media/anteriores/video/${c.slug}${esMovil ? '-movil' : ''}.jpg" width="${esMovil ? 390 : 960}" height="${esMovil ? (c.slug === 'cubbo' ? 798 : 844) : 600}" aria-label="${en ? `Walkthrough of the ${c.n} website` : `Recorrido por la web de ${c.n}`}" data-vid><source src="/media/anteriores/video/${c.slug}${esMovil ? '-movil' : ''}.mp4" type="video/mp4" /></video>`;
+          // 27/10 · las ESCENAS: la propia (la del sitio, como siempre) y las otras dos, para el botoncito. `nav` = la clase del navegador (mancha o claro)
+          const propia = s.tipo === 'escena' ? 'escena' : s.tipo === 'movil' || s.tipo === 'tel' ? 'movil' : 'navegador';
+          const nav = s.tipo === 'claro' ? 'claro' : 'mancha';
+          // el navegador de las cards que no lo llevan: colocado como sus vecinas de la misma proporción (sin efecto en la escena propia: solo lo leen .mancha/.claro .mockup)
+          const m = s.m ?? NAV_ALT[s.ratio], giro = s.giro ?? (s.m ? 0 : NAV_GIRO[s.ratio] ?? 0);
+          const vEscritorio = vid(c, false), vMovil = vid(c, true);
+          // el móvil de la mesa (sin espejo), solo si hay grabación en móvil
+          const qAlt = propia !== 'movil' && GRABADA_MOVIL.has(c.slug) ? escenaQuad('movil') : null;
+          return (
+            <>
+            {/* RONDA 292 · Eric: «tras savvia agentic los 5 proyectos, luego el grid y luego 3 proyectos más»: la cuadrícula ocupa una fila entera del mosaico, entre el 5.º y el 6.º */}
+            {i === 5 && (
+    <div class="cuadricula-arriba">
+      <Cuadricula />
+    </div>
+            )}
+            {VOZ_EN_MOSAICO && i === 5 && (
+              <figure class="banda voz" data-banda data-voz>
+                <!-- RONDA 67 · «a los retratos, el estilo dithering, que se mimeticen más con el fondo; el cambio, animado con el estilo de savvia»: cada retrato
+                     se pinta como TRAMA DE PUNTOS en el color del texto (lienzo 2D; la imagen es solo la fuente) y el relevo es el pintado rasgado de savvia -->
+                <div class="retratos" aria-hidden="true" data-retratos>
+                  {T.map((t, k) => <img class="fuente-r" src={t.retrato} alt="" width="800" height="800" loading="lazy" decoding="async" data-retrato />)}
+                  <canvas class="retrato-cv" data-rc></canvas>
+                  <canvas class="retrato-cv" data-rc></canvas>
+                </div>
+                <div class="voz-txt">
+                  <div class="citas">
+                    {T.map((t, k) => <blockquote class={`vq font-display ${k === 0 ? 'on' : ''}`} aria-hidden={k === 0 ? 'false' : 'true'} data-vq>{en ? `“${t.q}”` : `«${t.q}»`}</blockquote>)}
+                  </div>
+                  <div class="pie-voz">
+                  <figcaption class="autor">
+                    <span class="quienes">
+                      {T.map((t, k) => <span class={`quien ${k === 0 ? 'on' : ''}`} aria-hidden={k === 0 ? 'false' : 'true'} data-quien><b>{t.n}</b><span>{t.r}</span></span>)}
+                    </span>
+                  </figcaption>
+                  <!-- RONDA 144 · la barra de cristal de la casa (Eric: «las flechas no tienen el mismo espacio a cada lado») -->
+                  <div class="barra-cristal barra-voz" role="group" aria-label={en ? 'Testimonials' : 'Testimonios'}>
+                    <button type="button" class="paso" aria-label={en ? 'Previous testimonial' : 'Testimonio anterior'} data-paso="-1"><Fragment set:html={flecha('izq')} /></button>
+                    <button type="button" class="paso" aria-label={en ? 'Next testimonial' : 'Testimonio siguiente'} data-paso="1"><Fragment set:html={flecha()} /></button>
+                  </div>
+                  </div>
+                </div>
+              </figure>
+            )}
+            {/* 27/10 · Eric: «en la home tienes que dejar como están, PERO sí que tenemos que dar la oportunidad de cambiar de mobile/mesa y eso como en proyecto»: cada card
+                va en una CELDA (lleva el sitio del mosaico y las variables) con el botoncito de escena al lado del enlace, fuera de él (como Portfolio.astro › li[data-obra]) */}
+            <div class="celda" data-celda style={`--col:${s.col};--ratio:${s.ratio};--baja:${s.baja};${m ? `--mx:${m[0]}%;--top:${m[1]}%;--mw:${m[2]}%;` : s.ratio === '3 / 4' ? '--top:20%;' : ''}--giro:${giro}deg;--i:${(i % 3) + 1};--c1:${c.color[0]};--c2:${c.color[1]};--c3:${c.color[2]}`}>
+            <a class={`pieza ${s.tipo} ${s.izq ? 'izq' : ''} ${s.tipo !== 'claro' && claro(c.color[0]) ? 'tinta-oscura' : ''}`} data-slug={c.slug} data-tipo={s.tipo} data-forma={propia} data-nav={nav} href={casoDe(c) ? ruta(lang, `/proyectos/${casoDe(c)}`) : undefined} role={casoDe(c) ? undefined : 'button'} tabindex={casoDe(c) ? undefined : 0} data-caso={casoDe(c) ? '' : undefined} data-pieza>
+              <div class={`lamina ${s.g ?? 'g-marca'} ${s.fondo || s.barrido != null ? 'con-fondo' : ''} ${s.barrido != null ? 'barrido' : ''}`} style={s.fondo ? `--fondo:url('${s.fondo}')` : s.barrido != null ? BARRIDO(s.barrido) : undefined}>
+                {/* las escenas que no son la suya: ocultas, sin descargar nada hasta que se eligen (las fotos llevan data-src; los vídeos, preload="none" y el póster al verse) */}
+                {propia !== 'navegador' && <div class="mockup" data-f="navegador"><Fragment set:html={vEscritorio} /></div>}
+                {propia !== 'escena' && (
+                  <div class="mesa alt" data-f="escena" style={`--z:2.88;--left:${(50 - (PANT.x + PANT.w / 2) * 2.88 * 100).toFixed(2)};--cy:0.5;--py:${PANT.y + PANT.h / 2}`}>
+                    {['primavera', 'verano', 'otono', 'invierno'].map((e) => <img class="foto foto-e" data-e={e} data-src={`/media/estudio/${e}.webp`} alt="" width="1672" height="941" loading="lazy" decoding="async" />)}
+                    <span class="pantalla"><Fragment set:html={vEscritorio} /></span>
+                  </div>
+                )}
+                {propia !== 'movil' && qAlt && (
+                  <div class="mesa alt" data-f="movil" style={`--z:2.5;--left:${(50 - qAlt.cx * 2.5 * 100).toFixed(2)};--cy:0.5;--py:${qAlt.cy}`} data-mesa-quad>
+                    {['primavera', 'verano', 'otono', 'invierno'].map((e) => <img class="foto foto-e" data-e={e} data-src={`/media/anteriores/${QUAD.movil.foto}-${e}.webp`} alt="" width="1672" height="941" loading="lazy" decoding="async" />)}
+                    <span class="pantalla quad" style={`--mascara:url(/media/anteriores/${QUAD.movil.foto}-mascara.png?v=5);--cristal:url(/media/anteriores/${QUAD.movil.foto}-cristal.png?v=5);--vx:${MESA_MOVIL.movil.video[0]}%;--vy:${MESA_MOVIL.movil.video[1]}%;--vw:${MESA_MOVIL.movil.video[2]}%;--vh:${MESA_MOVIL.movil.video[3]}%;left:${((qAlt.x0 / LAM.w) * 100).toFixed(3)}%;top:${((qAlt.y0 / LAM.h) * 100).toFixed(3)}%;width:${((qAlt.W / LAM.w) * 100).toFixed(3)}%;height:${((qAlt.H / LAM.h) * 100).toFixed(3)}%;transform:${qAlt.matriz}`}><Fragment set:html={vMovil} /></span>
+                  </div>
+                )}
+                {s.tipo === 'escena' ? (
+                  <div class="mesa" data-f="escena" style={`--z:${Z};--left:${left.toFixed(2)};--cy:${s.cy};--py:${py}`}>
+                    {/* RONDA 232 · Andoni: «el de Home of Ambrose no cambia el mockup de estación»: la mesa del estudio, una lámina por estación (como el móvil) */}
+                    {['primavera', 'verano', 'otono', 'invierno'].map((e) => <img class="foto foto-e" data-e={e} src={`/media/estudio/${e}.webp`} srcset={`/media/estudio/${e}-m.webp 1600w, /media/estudio/${e}.webp 2560w`} sizes="(width < 48rem) 100vw, 1672px" alt="" width="1672" height="941" loading="lazy" decoding="async" />)}
+                    <span class="pantalla"><Fragment set:html={video} /></span>
+                  </div>
+                ) : quad ? (
+                  <div class="mesa" data-f="movil" style={`--z:${Z};--left:${left.toFixed(2)};--cy:${s.cy};--py:${py}`} data-mesa-quad>
+                    {/* RONDA 209 · el móvil de la mesa en la estación de la web (una lámina por estación; en espejo, la misma volteada): solo se pinta y se descarga
+                        la de la estación activa */}
+                    {['primavera', 'verano', 'otono', 'invierno'].map((e) => <img class="foto foto-e" data-e={e} src={`/media/anteriores/${QUAD[clave].foto}-${e}.webp`} alt="" width="1672" height="941" loading="lazy" decoding="async" />)}
+                    <span class="pantalla quad" style={`${s.tipo === 'movil' ? `--mascara:url(/media/anteriores/${QUAD[clave].foto}-mascara.png?v=5);--cristal:url(/media/anteriores/${QUAD[clave].foto}-cristal.png?v=5);--vx:${MESA_MOVIL[clave as 'movil'].video[0]}%;--vy:${MESA_MOVIL[clave as 'movil'].video[1]}%;--vw:${MESA_MOVIL[clave as 'movil'].video[2]}%;--vh:${MESA_MOVIL[clave as 'movil'].video[3]}%;` : ''}left:${((quad.x0 / LAM.w) * 100).toFixed(3)}%;top:${((quad.y0 / LAM.h) * 100).toFixed(3)}%;width:${((quad.W / LAM.w) * 100).toFixed(3)}%;height:${((quad.H / LAM.h) * 100).toFixed(3)}%;transform:${quad.matriz}`}><Fragment set:html={video} /></span>
+                  </div>
+                ) : s.tipo === 'tel' ? (
+                  <div class="tel-m"><span class="tel-pant"><Fragment set:html={video} /></span></div>
+                ) : (
+                  <div class="mockup" data-f="navegador">
+                    <Fragment set:html={video} />
+                  </div>
+                )}
+                <!-- RONDA 41 · «añadir un icono de que los mockups tienen vídeo al hacer hover»: se ve en reposo y se retira mientras el vídeo suena -->
+                <span class="vid-ic" aria-hidden="true"><Fragment set:html={icono('video-camera', 'fill')} /></span>
+                <!-- RONDA 215 · Eric: «cuando estás en hover, otro botón como el del vídeo pero para que hagan clic»: la LUPA ocupa el sitio del icono de vídeo al pasar y avisa de que la card abre el visor -->
+                {casoDe(c) && <span class="abre-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg></span>}
+                {!casoDe(c) && <span class="abre-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5" /><path d="M15.4 15.4 20 20M8 10.5h5M10.5 8v5" /></svg></span>}
+              </div>
+              <div class="pie pie-pieza mt-4">
+                <h3 class="nombre-pie font-display">{c.n}</h3>
+                {c.sector && <p class="detail text-fg2">{c.sector}</p>}{/* RONDA 189 · Eric: a la derecha, solo la categoría (sin el dominio) */}
+              </div>
+            </a>
+            {/* el botoncito de ESCENA (el de /proyectos: Portfolio.astro › .escenas): navegador · mesa · móvil (este, solo si hay grabación en móvil) */}
+            <div class="escenas" role="group" aria-label={en ? `View ${c.n} as` : `Ver ${c.n} en`} data-escenas>
+              <button type="button" data-escena="navegador" aria-label={en ? 'Browser' : 'Navegador'} title={en ? 'Browser' : 'Navegador'} aria-pressed={propia === 'navegador' ? 'true' : 'false'}><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 9h18" /></svg></button>
+              <button type="button" data-escena="escena" aria-label={en ? 'Desk' : 'Mesa'} title={en ? 'Desk' : 'Mesa'} aria-pressed={propia === 'escena' ? 'true' : 'false'}><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1.6" /><path d="M12 16v4M8 20h8" /></svg></button>
+              {(propia === 'movil' || qAlt) && <button type="button" data-escena="movil" aria-label={en ? 'Phone' : 'Móvil'} title={en ? 'Phone' : 'Móvil'} aria-pressed={propia === 'movil' ? 'true' : 'false'}><svg viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="2.2" /><path d="M11 18h2" /></svg></button>}
+            </div>
+            </div>
+            </>
+          );
+        })
+      }
+    </div>
+  </div>
+  <!-- RONDA 214 · Eric: «que al hacer clic en cada card se vea el mockup en grande, rollo slider modal»: un VISOR sobre la página (dialog nativo). Una lámina con el fondo de
+       la marca y la web grabada en grande (navegador de cristal; el móvil, de pie), el nombre y el sector debajo, y el slider entre los ocho con flechas, teclado y
+       gesto. La card sigue siendo un enlace a la web (sin JS, o con Cmd/Ctrl, va allí); el visor lleva solo la barra de flechas. -->
+  <dialog class="vis" data-vis aria-label={en ? 'Projects' : 'Proyectos'} aria-hidden="true">
+    <button type="button" class="vis-x barra-cristal" aria-label={en ? 'Close' : 'Cerrar'} data-vis-cerrar><span class="paso"><Fragment set:html={icono('x', 'regular')} /></span></button>
+    <div class="vis-caja" data-vis-caja>
+      <div class="vis-panel" data-vis-panel>
+        {
+          A.map(async (c) => {
+            // 27/10 · Eric: «cuando se abre el slide, que se abra SOLO con desktop mesa»: cada proyecto, en la MESA del estudio (la lámina de 5120 px en la estación de la
+            // web) con su web de ESCRITORIO en el monitor, como el visor de /proyectos (obra/Visor.astro), aunque la card enseñe el móvil. Fuera el navegador de cristal.
+            // RONDA 215 · la toma GRANDE (`<slug>-grande.mp4/.jpg`) si existe; si no, la de la card
+            const chico = `/media/anteriores/video/${c.slug}`;
+            const grande = await sharp(`public${chico}-grande.jpg`).metadata().then((m) => m, () => null);
+            const base = grande ? `${chico}-grande` : chico;
+            return (
+              <article class="vis-slide" data-vis-slide data-n={c.n} data-caso={casoDe(c) ? ruta(lang, `/proyectos/${casoDe(c)}`) : undefined} data-sector={c.sector ?? ''} aria-hidden="true" style={`--vf:${claro(c.color[0]) ? '#f6f7fb' : '#000'}`}>
+                <div class="vis-mesa" style={`--z:${ZV};--px:${PANT.x + PANT.w / 2};--py:${PANT.y + PANT.h / 2}`}>
+                  <img class="vis-foto" data-mesa="/media/estudio/{est}-xl.webp" alt="" width="5120" height="2880" decoding="async" />
+                  <span class="vis-pant">
+                    <video class="vis-vid" muted loop playsinline preload="none" data-visor-poster={`${base}.jpg`} data-src={`${base}.mp4`} aria-label={en ? `Walkthrough of the ${c.n} website` : `Recorrido por la web de ${c.n}`}></video>
+                  </span>
+                </div>
+              </article>
+            );
+          })
+        }
+        <!-- 30/10 · José Luis y Eric: con caso de estudio, la imagen del centro también lleva a él (para el teclado ya está el botón) -->
+        <a class="vis-abre" href="#" hidden tabindex="-1" aria-hidden="true" data-vis-abre></a>
+      </div>
+      <div class="vis-pie">
+        <div class="vis-quien" data-vis-quien>
+          <h3 class="vis-nombre font-display" data-vis-nombre></h3>
+          <p class="detail vis-sector" data-vis-sector></p>
+        </div>
+        <div class="vis-acciones">
+            <a class="btn-secondary btn-sm vis-caso" href="#" hidden data-vis-caso><span class="btn-tx">{en ? 'View case study' : 'Ver caso de estudio'}</span><Fragment set:html={flecha()} /></a>
+          <div class="barra-cristal" role="group" aria-label={en ? 'Projects' : 'Proyectos'}>
+            <button type="button" class="paso" aria-label={en ? 'Previous project' : 'Proyecto anterior'} data-vis-paso="-1"><Fragment set:html={flecha('izq')} /></button>
+            <button type="button" class="paso" aria-label={en ? 'Next project' : 'Proyecto siguiente'} data-vis-paso="1"><Fragment set:html={flecha()} /></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </dialog>
+</section>
+
+<script>
+  import { jugar } from '../scripts/jugar';
+  import { crearEstela } from '../scripts/estela';
+  import { rasgarCopia, estaVisible, cambiarFoto } from '../scripts/revelar';
+  import { EST, estacionActual } from '../scripts/estacion';
+  // RONDA 232 · «al cambiar de estación, los mockups fluidos como el hero»: la mesa (una foto por estación, por CSS) y los paisajes barridos (una
+  // imagen de fondo por estación, por CSS) cambiaban de golpe (Safari no funde background-image). Al cambiar, se congela una copia del aspecto
+  // VIEJO encima de cada pieza a la vista y se le abre un agujero con el canto rasgado desde abajo, como el árbol del hero.
+  {
+    let prev = EST[estacionActual()] as string;
+    // la foto de la mesa de la estación de la web, pedida al acercarse la pieza. 29/10 · Eric: «la home tarda en cargar»: antes se pedían las CUATRO
+    // (≈ 2 MB en el móvil, para ver una); la de otra estación se pide al cambiar, y el rasgado espera a que esté descodificada (ver abajo)
+    const cerca = new IntersectionObserver((en) => en.forEach((e) => { if (!e.isIntersecting) return; const i = e.target.querySelector<HTMLImageElement>(`.foto-e[data-e="${EST[estacionActual()]}"]`); if (i) i.loading = 'eager'; cerca.unobserve(e.target); }), { rootMargin: '400px 0px' });
+    document.querySelectorAll('.mesa').forEach((m) => cerca.observe(m));
+    // el cartel de cada vídeo (≈15 JPG de 40–120 KB) se pide al acercarse, no al cargar la página: un <video poster> no admite loading=lazy
+    const carteles = new IntersectionObserver((en) => en.forEach((e) => { if (!e.isIntersecting) return; const v = e.target as HTMLVideoElement; if (v.dataset.poster) v.poster = v.dataset.poster; carteles.unobserve(v); }), { rootMargin: '800px 0px' });
+    document.querySelectorAll<HTMLVideoElement>('video[data-poster]').forEach((v) => carteles.observe(v));
+    addEventListener('savvia:estacion', () => {
+      const viejo = prev; prev = EST[estacionActual()];
+      if (viejo === prev) return;
+      document.querySelectorAll<HTMLElement>('.lamina.barrido').forEach((l) => {
+        if (!estaVisible(l)) return;
+        const c = document.createElement('div');
+        c.style.cssText = `position:absolute;inset:-2%;pointer-events:none;background:var(--b-${viejo}) center / cover no-repeat`;
+        l.prepend(c); rasgarCopia(c, { ox: 0.5, oy: 1, ref: l });
+      });
+      document.querySelectorAll<HTMLElement>('.mesa').forEach((m) => {
+        const img = m.querySelector<HTMLImageElement>(`.foto-e[data-e="${viejo}"]`);
+        if (!img || !estaVisible(m)) return;
+        // la propia foto vieja (ya descodificada: una copia nueva llegaba en blanco el primer fotograma en Chrome), encima de todas y bajo la pantalla (z 2);
+        // al acabar vuelve a su sitio y el CSS la esconde
+        img.style.cssText = 'display:block;position:absolute;inset:0;z-index:1;pointer-events:none';
+        // (30/10) el rasgado espera a que la foto nueva esté descodificada: con red lenta se abría sobre el hueco y la pantalla parpadeaba
+        const nueva = m.querySelector<HTMLImageElement>(`.foto-e[data-e="${prev}"]`);
+        if (nueva) nueva.loading = 'eager';
+        // (30/10, iPhone) en táctil la vieja se funde en vez de rasgarse: el rasgado repinta su máscara cada fotograma debajo del vídeo que suena y lo hacía parpadear
+        const tactil = !matchMedia('(hover: hover)').matches;
+        const fundir = () => { img.style.transition = 'opacity 1.4s ease'; requestAnimationFrame(() => { img.style.opacity = '0'; }); setTimeout(() => { img.style.cssText = ''; }, 1500); };
+        Promise.race([nueva?.decode().catch(() => {}), new Promise((r) => setTimeout(r, 5000))]).then(() => (tactil ? fundir() : rasgarCopia(img, { ox: 0.5, oy: 1, ref: m.closest<HTMLElement>('.lamina') ?? undefined, fin: () => { img.style.cssText = ''; } })));
+      });
+    });
+  }
+  // RONDA 214 · EL VISOR de los proyectos (ver el dialog `data-vis`): clic en una card → la web en grande; flechas, teclado (← → Esc) y gesto entre los ocho.
+  {
+    const vis = document.querySelector<HTMLDialogElement>('[data-vis]');
+    const piezas = [...document.querySelectorAll<HTMLElement>('[data-pieza]')];
+    if (vis && piezas.length) {
+      const slides = [...vis.querySelectorAll<HTMLElement>('[data-vis-slide]')];
+      const quien = vis.querySelector<HTMLElement>('[data-vis-quien]')!, nombre = vis.querySelector<HTMLElement>('[data-vis-nombre]')!, sector = vis.querySelector<HTMLElement>('[data-vis-sector]')!;
+      const panel = vis.querySelector<HTMLElement>('[data-vis-panel]')!;
+      const verCaso = vis.querySelector<HTMLAnchorElement>('[data-vis-caso]'), abreCaso = vis.querySelector<HTMLAnchorElement>('[data-vis-abre]');
+      const reducido = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      let cur = -1, vuelta: HTMLElement | null = null, cerrando = 0;
+      const vid = (i: number) => slides[i].querySelector<HTMLVideoElement>('video')!;
+      // 27/10 · la mesa, en la lámina de la estación de la web (la de 5120 px: el monitor ocupa medio panel); vira con ella
+      const mesa = (i: number) => { const im = slides[i].querySelector<HTMLImageElement>('[data-mesa]')!; const u = im.dataset.mesa!.replace('{est}', document.documentElement.dataset.estacion || 'otono'); if (im.getAttribute('src') !== u) im.src = u; };
+      // (30/10) con el visor abierto, la lámina nueva entra con el rasgado, ya descargada
+      addEventListener('savvia:estacion', () => slides.forEach((s) => { const im = s.querySelector<HTMLImageElement>('[data-mesa]'); if (im?.getAttribute('src')) cambiarFoto(im, { src: im.dataset.mesa!.replace('{est}', document.documentElement.dataset.estacion || 'otono') }); }));
+      // la fuente del vídeo se pone la primera vez que hace falta (preload="none"): el visor abre con el póster y no gasta red en los ocho
+      const carga = (i: number) => {
+        mesa(i);
+        const v = vid(i);
+        if (v.dataset.cargado) return;
+        v.dataset.cargado = '1';
+        if (v.dataset.visorPoster) v.poster = v.dataset.visorPoster.replace(/^(\/media\/(?:obra|anteriores\/video)\/.+)\.jpg$/, '$1.webp'); // 29/10 · el cartel WebP
+        // 29/10 · Eric (iPhone): «Kymatio sigue en negro, ¿y el thumbnail?»: iOS no siempre pinta el póster de un <video> (bajo consumo, demasiados decodificadores):
+        // la miniatura va DEBAJO, de fondo de la pantalla, y el vídeo solo se enseña cuando reproduce de verdad
+        if (v.poster) v.parentElement!.style.backgroundImage = `url(${v.poster})`;
+        v.addEventListener('playing', () => v.classList.add('listo'), { once: true });
+        const so = document.createElement('source'); so.src = v.dataset.src!; so.type = 'video/mp4'; v.appendChild(so); v.load();
+      };
+      // RONDA 218 · Safari se quedaba sin memoria: cada vídeo del visor, una vez cargado, no se soltaba nunca. Ahora solo viven el actual y sus dos vecinos, y al cerrar se sueltan todos
+      const soltar = (i: number) => {
+        const v = vid(i);
+        if (!v.dataset.cargado) return;
+        v.pause(); v.querySelectorAll('source').forEach((x) => x.remove()); v.removeAttribute('src'); v.load();
+        v.classList.remove('listo');
+        delete v.dataset.cargado;
+      };
+      const ir = (n: number, animar = true) => {
+        n = (n + slides.length) % slides.length;
+        const cambia = n !== cur;
+        cur = n;
+        slides.forEach((sl, i) => {
+          const on = i === n;
+          sl.classList.toggle('on', on); sl.setAttribute('aria-hidden', on ? 'false' : 'true');
+          const v = vid(i);
+          if (on) {
+            // cada vez que se abre una card o se llega a un proyecto, su vídeo EMPIEZA DE CERO (Eric); al irse se para
+            carga(i); if (cambia) v.currentTime = 0;
+            jugar(v);
+          } else { v.pause(); }
+        });
+        carga((n + 1) % slides.length); carga((n - 1 + slides.length) % slides.length);
+        slides.forEach((_, i) => { const d = (i - n + slides.length) % slides.length; if (d > 1 && d < slides.length - 1) soltar(i); });
+        const d = slides[n].dataset;
+        nombre.textContent = d.n ?? ''; sector.textContent = d.sector ?? '';
+        [verCaso, abreCaso].forEach((l) => { if (!l) return; l.hidden = !d.caso; if (d.caso) l.href = d.caso; }); // Eric: «aquí poner Ver caso de estudio»: solo si el proyecto tiene caso
+        if (cambia && animar && !reducido) quien.animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: 520, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' });
+      };
+      vis.addEventListener('close', () => slides.forEach((_, i) => soltar(i)));
+      // RONDA 280 · la caja y la lámina en píxeles ENTEROS (el centrado cae en un píxel exacto). 27/10: sin el navegador de cristal, ya no hay marco que medir
+      const caja = vis.querySelector<HTMLElement>('[data-vis-caja]')!;
+      const ajusta = () => {
+        if (!vis.open) return;
+        caja.style.width = ''; caja.style.marginTop = ''; panel.style.height = '';
+        const VW = vis.clientWidth, VH = vis.clientHeight;
+        let W = Math.floor(caja.getBoundingClientRect().width);
+        if ((VW - W) % 2) W -= 1; // misma paridad que la ventana: el centrado cae en un píxel exacto
+        const H = Math.round(W / 1.6);
+        caja.style.width = W + 'px'; panel.style.height = H + 'px';
+        caja.style.alignSelf = 'start';
+        const pie = caja.getBoundingClientRect().height - panel.getBoundingClientRect().height;
+        caja.style.marginTop = Math.max(0, Math.floor((VH - H - pie) / 2)) + 'px';
+      };
+      addEventListener('resize', ajusta);
+      const abre = (i: number) => {
+        if (vis.open) return;
+        vuelta = document.activeElement as HTMLElement | null;
+        clearTimeout(cerrando); vis.classList.remove('cierra');
+        cur = -1; // al abrir, siempre «cambia»: el vídeo empieza de cero aunque sea el mismo proyecto de la vez anterior
+        // abierto ANTES de jugar: si iOS veta el autoplay, el botón de play se pone sobre una pantalla que ya mide (cerrado medía 0)
+        vis.showModal(); vis.removeAttribute('aria-hidden');
+        ir(i, false); ajusta();
+        document.documentElement.style.overflow = 'hidden';
+      };
+      const cierra = () => {
+        if (!vis.open || vis.classList.contains('cierra')) return;
+        vis.classList.add('cierra');
+        cerrando = window.setTimeout(() => vis.close(), reducido ? 0 : 280);
+      };
+      vis.addEventListener('close', () => {
+        vis.classList.remove('cierra'); vis.setAttribute('aria-hidden', 'true');
+        document.documentElement.style.overflow = '';
+        slides.forEach((_, i) => vid(i).pause());
+        vuelta?.focus({ preventScroll: true });
+      });
+      vis.addEventListener('cancel', (e) => { e.preventDefault(); cierra(); }); // Esc: con la misma salida suave
+      // 30/10 · Andoni: «los proyectos no deberían ir a ninguna web: abren el slider con la grabación y listo, menos Neety, que lleva al caso; también la home».
+      // Sin caso, la pieza ya no es un enlace (sin `href`, `role="button"`): clic, Intro y espacio abren el visor; con Cmd+clic, clic central o sin JS no hay
+      // web a la que ir (antes, con modificador iba a la web del cliente). 28/10 · Eric: «en mobile clico y me va a la URL de la web final: eso NUNCA».
+      piezas.forEach((pz, i) => {
+        if (pz.hasAttribute('data-caso')) return; // con caso de estudio, el clic va al caso
+        pz.addEventListener('click', (e) => { if (e.defaultPrevented || e.button !== 0) return; e.preventDefault(); abre(i); });
+        pz.addEventListener('keydown', (e) => { if (e.key !== 'Enter' && e.key !== ' ') return; e.preventDefault(); abre(i); });
+      });
+      vis.querySelectorAll<HTMLElement>('[data-vis-paso]').forEach((b) => b.addEventListener('click', () => ir(cur + Number(b.dataset.visPaso))));
+      vis.querySelector('[data-vis-cerrar]')!.addEventListener('click', cierra);
+      // clic fuera de la lámina y de los controles = cerrar
+      vis.addEventListener('click', (e) => { const t = e.target as HTMLElement; if (t === vis || t.matches('[data-vis-caja]')) cierra(); });
+      vis.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight') { e.preventDefault(); ir(cur + 1); }
+        else if (e.key === 'ArrowLeft') { e.preventDefault(); ir(cur - 1); }
+      });
+      // gesto: arrastrar en horizontal sobre la lámina
+      let x0 = 0, y0 = 0, seguir = false;
+      panel.addEventListener('pointerdown', (e) => { x0 = e.clientX; y0 = e.clientY; seguir = e.pointerType !== 'mouse'; });
+      panel.addEventListener('pointerup', (e) => {
+        if (!seguir) return;
+        seguir = false;
+        const dx = e.clientX - x0, dy = e.clientY - y0;
+        if (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy) * 1.4) ir(cur + (dx < 0 ? 1 : -1));
+      });
+    }
+  }
+  // RONDA 206 · el navegador de mancha y claro, al pasar (o enfocar): centrado, recto y entero. Se mide una vez por entrada: la escala que lo lleva al 88 % del ancho de
+  // la pieza y el desplazamiento de su esquina (origen 0 0) para que quede en el centro; solo transformaciones, así que ida y vuelta son la misma curva.
+  {
+    const conHover = matchMedia('(hover: hover)').matches;
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      const tactiles: { pz: HTMLElement; entra: () => void; sale: () => void }[] = [];
+      // 27/10 · todas las piezas llevan navegador (el botoncito de escena puede ponerlo): solo se mueve si es la escena que se ve
+      document.querySelectorAll<HTMLElement>('[data-pieza]').forEach((pz) => {
+        const mk = pz.querySelector<HTMLElement>('.mockup[data-f="navegador"]'), lam = pz.querySelector<HTMLElement>('.lamina');
+        if (!mk || !lam) return;
+        const entra = () => {
+          if (pz.dataset.forma !== 'navegador' || !mk.offsetWidth) return;
+          pz.classList.add('interactivo');
+          const W = lam.clientWidth, H = lam.clientHeight, s = (W * 0.88) / mk.offsetWidth;
+          mk.style.setProperty('--hs', String(s));
+          mk.style.setProperty('--hx', ((W - mk.offsetWidth * s) / 2 - mk.offsetLeft).toFixed(1) + 'px');
+          mk.style.setProperty('--hy', ((H - mk.offsetHeight * s) / 2 - mk.offsetTop).toFixed(1) + 'px');
+          requestAnimationFrame(() => pz.classList.add('centra'));
+        };
+        const sale = () => pz.classList.remove('centra');
+        if (!conHover) { tactiles.push({ pz, entra, sale }); return; }
+        // si se pierde un pointerleave (scroll con el cursor encima, cambio de pestaña), la pieza vuelve a su sitio igualmente
+        setInterval(() => { if (pz.classList.contains('centra') && !pz.matches(':hover, :focus-visible')) sale(); }, 250);
+        addEventListener('blur', sale);
+        pz.addEventListener('pointerenter', entra); pz.addEventListener('pointerleave', sale);
+        pz.addEventListener('focusin', entra); pz.addEventListener('focusout', sale);
+      });
+      // RONDA 268 · Eric (móvil): sin hover no hay gesto que lo ponga recto. RONDA 290 · Eric: «en mobile los proyectos tienen que aparecer directamente con el mockup
+      // centrado; la animación de scroll in parece un glitch»: en táctil el navegador nace ya recto y centrado (sin ligarlo al scroll); se vuelve a medir si la pieza cambia de tamaño.
+      tactiles.forEach((t) => {
+        const lam = t.pz.querySelector<HTMLElement>('.lamina')!;
+        t.pz.classList.add('fijo');
+        t.entra();
+        new ResizeObserver(() => t.entra()).observe(lam);
+        t.pz.addEventListener('pieza:forma', () => t.entra()); // al elegir el navegador con el botoncito, nace ya centrado
+      });
+    }
+  }
+  // RONDA 19 · el VÍDEO de cada web: al pasar el cursor o enfocar la pieza; en táctil (sin hover), mientras la pieza está a la vista.
+  // Con movimiento reducido no se reproduce solo. La fuente se carga la primera vez que hace falta (preload="none").
+  {
+    const reducido = matchMedia('(prefers-reduced-motion: reduce)').matches, conRaton = matchMedia('(hover: hover)').matches;
+    const vids = [...document.querySelectorAll<HTMLVideoElement>('[data-vid]')];
+    // RONDA 206 · Eric: «al hacer hover out no se empieza de nuevo; tiene que ir al hero otra vez» · «no es verdad, no siempre vuelve al estado inicial»: al parar,
+    // el vídeo vuelve al primer fotograma (el hero). Para que NUNCA se quede a medias aunque se pierda un pointerleave (scroll con el cursor encima, cambio de pestaña,
+    // foco de un clic), cada vídeo lleva su estado (`activo`) y un vigilante: si suena o avanza sin estar activo, se para y se reinicia.
+    const activos = new Set<() => void>();
+    let vigilante = 0;
+    const vigilar = () => { if (!vigilante) vigilante = window.setInterval(() => { activos.forEach((f) => f()); if (!activos.size) { clearInterval(vigilante); vigilante = 0; } }, 250); };
+    // 27/10 · cada pieza lleva el vídeo de cada escena: solo suena el de la que se ve (data-forma de la pieza; la escena, data-f)
+    const seVe = (v: HTMLVideoElement, pz: Element) => v.closest<HTMLElement>('[data-f]')?.dataset.f === (pz as HTMLElement).dataset.forma;
+    const tactiles = new Map<Element, { fns: ((si: boolean) => void)[]; ve: boolean }>();
+    let sonandoPz: Element | null = null, relojVideo = 0, cargada = document.readyState === 'complete';
+    addEventListener('load', () => { cargada = true; elegirVideo(); }, { once: true });
+    const vistaTactil = new IntersectionObserver((es) => { es.forEach((e) => { const t = tactiles.get(e.target)!; t.ve = e.isIntersecting; if (!t.ve) { t.fns.forEach((f) => f(false)); if (sonandoPz === e.target) sonandoPz = null; } }); elegirVideo(); }, { threshold: [0, 0.6] });
+    function elegirVideo() {
+      clearTimeout(relojVideo);
+      relojVideo = window.setTimeout(() => {
+        if (!cargada) return;
+        let mejor: Element | null = null, d = Infinity;
+        tactiles.forEach((t, pz) => {
+          if (!t.ve) return;
+          const r = pz.getBoundingClientRect(), vis = Math.min(r.bottom, innerHeight) - Math.max(r.top, 0);
+          if (vis < Math.min(r.height, innerHeight) * 0.6) return;
+          const dd = Math.abs(r.top + r.height / 2 - innerHeight / 2); if (dd < d) { d = dd; mejor = pz; }
+        });
+        if (mejor === sonandoPz) return;
+        if (sonandoPz) tactiles.get(sonandoPz)?.fns.forEach((f) => f(false));
+        sonandoPz = mejor;
+        if (mejor) tactiles.get(mejor)!.fns.forEach((f) => f(true));
+      }, 900);
+    }
+    if (!conRaton) addEventListener('scroll', () => { if (tactiles.size) elegirVideo(); }, { passive: true });
+    vids.forEach((v) => {
+      const pieza = v.closest('[data-pieza]')!;
+      let activo = false, jugado = false, enVista = false;
+      // `currentTime = 0` no basta: a veces el vídeo sigue PINTANDO el último fotograma (medido: 6 de 36 salidas, sobre todo tras 1–5 s). `load()` lo devuelve al póster,
+      // que es su primer fotograma (el hero), siempre
+      // (27/10: `load()` borra el evento `pause` que estaba en cola y la pieza se quedaba en `.suena`, sin el icono de vídeo: se quita aquí)
+      const parar = () => { activo = false; activos.delete(comprueba); v.pause(); pieza.classList.remove('suena'); if (jugado) { jugado = false; v.load(); } };
+      const comprueba = () => { if (activo && conRaton && !pieza.matches(':hover, :focus-visible')) parar(); };
+      const tocar = (si: boolean) => { if (si && !seVe(v, pieza)) { if (activo) parar(); return; } if (si) { activo = true; jugar(v); if (conRaton) { activos.add(comprueba); vigilar(); } } else parar(); };
+      v.addEventListener('playing', () => { jugado = true; pieza.classList.add('suena'); if (!activo) parar(); });
+      v.addEventListener('timeupdate', () => { if (!activo && v.currentTime > 0.05) parar(); });
+      v.addEventListener('pause', () => pieza.classList.remove('suena'));
+      // al cambiar de escena: el vídeo de la que se va, parado y al principio; el de la que llega suena si la pieza sigue a la vista (táctil) o bajo el cursor
+      pieza.addEventListener('pieza:forma', () => { if (!seVe(v, pieza)) parar(); else if (!reducido && (conRaton ? pieza.matches(':hover, :focus-visible') : enVista)) tocar(true); });
+      if (reducido) return;
+      document.addEventListener('visibilitychange', () => { if (document.hidden && !v.hasAttribute('data-siempre')) parar(); });
+      addEventListener('blur', () => { if (!v.hasAttribute('data-siempre')) parar(); });
+      // RONDA 204 · Eric: Home of Ambrose (`data-siempre`) suena siempre en bucle mientras está a la vista, «para que se vea que es vídeo»; el resto, al pasar
+      // (30/10 · rendimiento en móvil: al bajar la home con 4G lenta se descargaban 19 MB, el vídeo de cada pieza que pasaba) en táctil, como en el portfolio:
+      // se ve el cartel y suena UNO, el de la pieza más centrada cuando el scroll lleva 0,9 s parado (`elegirVideo`, más abajo); también Home of Ambrose
+      if (!conRaton) { const t = tactiles.get(pieza) ?? { fns: [] as ((si: boolean) => void)[], ve: false }; t.fns.push((si) => { enVista = si; tocar(si); }); tactiles.set(pieza, t); if (t.fns.length === 1) vistaTactil.observe(pieza); }
+      else if (v.hasAttribute('data-siempre')) new IntersectionObserver((e) => { if (e[0].isIntersecting) { activo = true; jugar(v); } else parar(); }, { threshold: 0.35 }).observe(pieza);
+      else {
+        pieza.addEventListener('pointerenter', () => tocar(true));
+        pieza.addEventListener('pointerleave', () => tocar(false));
+        pieza.addEventListener('focusin', () => { if (pieza.matches(':focus-visible')) tocar(true); });
+        pieza.addEventListener('focusout', () => tocar(false));
+        // si la pieza sale de la pantalla (scroll con el cursor encima), también se reinicia
+        new IntersectionObserver((e) => { if (!e[0].isIntersecting) parar(); }, { threshold: 0 }).observe(pieza);
+      }
+    });
+    // las pantallas en perspectiva: la homografía lleva píxeles → hace falta la escala real de la lámina (--s = ancho de la mesa / 1672)
+    const mesas = [...document.querySelectorAll<HTMLElement>('[data-mesa-quad]')];
+    const ro = new ResizeObserver((es) => es.forEach((e) => (e.target as HTMLElement).style.setProperty('--s', String(e.contentRect.width / 1672))));
+    mesas.forEach((m) => { m.style.setProperty('--s', String(m.offsetWidth / 1672)); ro.observe(m); });
+  }
+  // RONDA 66 · LA CUADRÍCULA QUE ROTA: cada celda releva su contenido cada 4,8 s, escalonadas (la celda c, c × 0,8 s después); el que se va se desenfoca
+  // y sube, el que llega viene de abajo y enfoca. Solo a la vista y sin movimiento reducido. Y EL TESTIMONIO: uno a la vez, cada 9 s, con flechas; se para
+  // con el puntero encima.
+  {
+    const reducido = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const voz = document.querySelector<HTMLElement>('[data-voz]');
+    if (voz) {
+      const grupos = ['[data-vq]', '[data-quien]'].map((q) => [...voz.querySelectorAll<HTMLElement>(q)]);
+      const fuentes = [...voz.querySelectorAll<HTMLImageElement>('[data-retrato]')], lienzos = [...voz.querySelectorAll<HTMLCanvasElement>('[data-rc]')];
+      let k = 0, quieto = false, visible = false, reloj = 0, frente = 0, gen = 0;
+      // RONDA 68 · «menos dithering y más como estaban, como dibujadas, más mimetizadas con el fondo; al cambiar de testimonio, que se dibujen los retratos
+      // y se escriba el testimonio». El retrato es el CARBONCILLO tal cual, pero en la tinta del texto de la sección (alfa = lo oscuro del trazo: el papel
+      // es el propio fondo) y se DIBUJA: primero lo más oscuro (pelo, ojos, contorno), luego los medios tonos, en rayas diagonales como el sombreado
+      // del propio dibujo. Un solo reloj por relevo (gen): si llega otro a medias, el anterior se abandona sin tocar nada.
+      const ruido = (() => {
+        const N = 256, t = new Float32Array(N * N); let h = 1234567;
+        for (let i = 0; i < t.length; i++) { h = (h * 1103515245 + 12345) & 0x7fffffff; t[i] = h / 0x7fffffff; }
+        return (x: number, y: number) => {
+          const xi = Math.floor(x), yi = Math.floor(y), fx = x - xi, fy = y - yi, sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
+          const g = (a: number, b: number) => t[((b & 255) << 8) | (a & 255)];
+          return (g(xi, yi) * (1 - sx) + g(xi + 1, yi) * sx) * (1 - sy) + (g(xi, yi + 1) * (1 - sx) + g(xi + 1, yi + 1) * sx) * sy;
+        };
+      })();
+      type Prep = { W: number; H: number; d: Float32Array; t: Float32Array; rgb: number[]; im?: ImageData };
+      const preparar = (img: HTMLImageElement, cv: HTMLCanvasElement): Prep | null => {
+        // RONDA 76 · rendimiento («la web se ralentiza»): el retrato se calculaba y se repintaba píxel a píxel a densidad retina (≈520.000 px por
+        // fotograma durante 2,4 s en un Mac). A 1,25 el carboncillo se ve igual (es trazo blando) y cuesta 2,6 veces menos
+        const dpr = Math.min(1.25, devicePixelRatio || 1), r = cv.getBoundingClientRect(), W = Math.round(r.width * dpr), H = Math.round(r.height * dpr);
+        if (!W || !img.naturalWidth) return null;
+        cv.width = W; cv.height = H;
+        const o = document.createElement('canvas'); o.width = W; o.height = H; const oc = o.getContext('2d')!;
+        const s = Math.min(W / img.naturalWidth, H / img.naturalHeight); oc.drawImage(img, (W - img.naturalWidth * s) / 2, H - img.naturalHeight * s, img.naturalWidth * s, img.naturalHeight * s);
+        const px = oc.getImageData(0, 0, W, H).data, n = W * H, d = new Float32Array(n), t = new Float32Array(n);
+        const esc = 1 / dpr;
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+          const i = y * W + x, a = px[i * 4 + 3] / 255;
+          const osc = 1 - (0.299 * px[i * 4] + 0.587 * px[i * 4 + 1] + 0.114 * px[i * 4 + 2]) / 255;
+          // RONDA 69 · «más mimetizados con el fondo aún»: la tinta más ligera y el dibujo se deshace hacia los bordes (como un carboncillo que se difumina en el papel)
+          // RONDA 72 · «algo menos mimetizados y con el efecto dithering del resto de la web, pero no tan exagerado»: borde más corto, y encima de la tinta
+          // continua un SEMITONO de puntos a 45° (celda de 3,5 px, como los cantos del roble) que pesa más en los medios tonos y hacia los bordes
+          const rx = x / W - 0.5, ry = y / H - 0.46, rr = Math.sqrt(rx * rx + ry * ry * 0.8), borde = rr < 0.36 ? 1 : Math.max(0, 1 - (rr - 0.36) / 0.16);
+          const u = (x + y) * esc * 0.7071, v = (x - y) * esc * 0.7071;
+          const tinta = Math.min(1, Math.pow(osc, 1.05) * a) * borde;
+          const cel = 3.5, fu = (u / cel) % 1, fv = (((v / cel) % 1) + 1) % 1, du = fu - 0.5, dv = fv - 0.5, r = Math.sqrt(du * du + dv * dv) * cel;
+          const R = Math.sqrt(tinta) * cel * 0.58, punto = Math.min(1, Math.max(0, (R - r) / 0.7 + 0.5));
+          const peso = 0.28 + 0.34 * (1 - Math.abs(tinta - 0.5) * 2) + 0.2 * (1 - borde);
+          d[i] = tinta * (1 - peso) + punto * peso * (tinta > 0.02 ? 1 : 0);
+          // rayas (el orden del dibujo): largas en la diagonal del sombreado, finas de través
+          t[i] = 0.5 * (1 - d[i]) + 0.32 * ruido(u / 46, v / 2.6) + 0.18 * ruido(x * esc / 90, y * esc / 90);
+        }
+        const m = getComputedStyle(voz).color.match(/[\d.]+/g)!.map(Number);
+        return { W, H, d, t, rgb: [m[0], m[1], m[2]] };
+      };
+      const pintar = (cv: HTMLCanvasElement, P: Prep, p: number) => {
+        const c = cv.getContext('2d')!, im = (P.im ??= c.createImageData(P.W, P.H)), o = im.data, [R, G, B] = P.rgb, n = P.W * P.H, lo = p * 1.18 - 0.14;
+        for (let i = 0; i < n; i++) {
+          const di = P.d[i]; if (di < 0.02) continue;
+          const q = (lo - P.t[i]) / 0.14, e = q <= 0 ? 0 : q >= 1 ? 1 : q * q * (3 - 2 * q);
+          if (!e) continue;
+          const j = i * 4; o[j] = R; o[j + 1] = G; o[j + 2] = B; o[j + 3] = 255 * di * 0.8 * e;
+        }
+        c.putImageData(im, 0, 0);
+      };
+      let anchoR = 0;
+      const listo = (img: HTMLImageElement) => (img.complete && img.naturalWidth ? Promise.resolve() : new Promise<void>((r) => img.addEventListener('load', () => r(), { once: true })));
+      const caja = voz.querySelector<HTMLElement>('[data-retratos]')!;
+      let motorCv: HTMLCanvasElement | null = null;
+      const fondoSeccion = (): [number, number, number] => {
+        let el: HTMLElement | null = caja;
+        while (el) { const m = getComputedStyle(el).backgroundColor.match(/[\d.]+/g); if (m && (m.length < 4 || +m[3] > 0.5)) return [+m[0], +m[1], +m[2]]; el = el.parentElement; }
+        return [234, 221, 231];
+      };
+      const pintarConMotor = (img: HTMLImageElement, mia: number) => {
+        const cv = lienzos[0].cloneNode() as HTMLCanvasElement; // el clon conserva el ámbito de Astro
+        cv.removeAttribute('data-rc'); cv.classList.add('motor'); caja.append(cv);
+        // ronda 152 (3.ª) · «quitar el efecto animado de dithering en los testimonios, queda raro»: sin hervor (soplo); se pinta y se queda quieto
+        const est = crearEstela(cv, img, { origen: [0.5, 1], dir: -1, soplo: false, gota: true, manual: true, hd: true, intensidad: 0 });
+        if (!est) { cv.remove(); return false; }
+        est.fondo(...fondoSeccion()); est.visible(true);
+        lienzos.forEach((l) => l.classList.remove('on'));
+        const viejo = motorCv; motorCv = cv;
+        requestAnimationFrame(() => { if (mia === gen) { cv.classList.add('on'); est.soltar(); } });
+        if (viejo) { viejo.classList.remove('on'); setTimeout(() => { (viejo.getContext('webgl2') ?? viejo.getContext('webgl'))?.getExtension('WEBGL_lose_context')?.loseContext(); viejo.remove(); }, 900); }
+        return true;
+      };
+      // RONDA 144 · Eric: «la ilustración tiene que aparecer a la vez que el texto»: la cita espera al retrato (antes se escribía mientras la
+      // imagen aún cargaba) y los dos duran lo mismo (1,6 s)
+      const pintarRetrato = async (n: number, dibujado = true) => {
+        const mia = ++gen, img = fuentes[n]; if (img.loading === 'lazy') img.loading = 'eager';
+        await listo(img);
+        if (mia !== gen) return;
+        // RONDA 193 · Eric: «la forma en la que sale el texto junto con la foto ilustrada tiene que ser smooth, todo en conjunto, stagger y bien
+        // sincronizado». UN reloj por relevo: retrato, cita, nombre y cargo se van JUNTOS (0,35 s) y, cuando se han ido, entran escalonados desde
+        // el mismo instante: el retrato empieza a dibujarse, la cita sube palabra a palabra, después el nombre, el cargo y las flechas.
+        // (Antes: la cita se tecleaba con cursor mientras el retrato viejo aún se apagaba encima del nuevo y el nombre iba por libre.)
+        const primero = !voz.classList.contains('vista');
+        const SALIDA = primero || !dibujado || reducido ? 0 : 350;
+        voz.style.setProperty('--d0', `${SALIDA}ms`);
+        mostrar(n);
+        // RONDA 152 · Andoni: «el estilo del árbol, que es lo principal, llevarlo a todas las ilustraciones»: el retrato lo PINTA el motor del roble
+        // (estela.ts: líneas del dibujo por delante, la pintura con canto rasgado desde abajo, semitono en los cantos y el hervor en reposo), fundido con
+        // el papel de la sección. Cada relevo, en un lienzo nuevo encima; el anterior se apaga y suelta su contexto. Sin WebGL, el carboncillo de antes.
+        // RONDA 153 · Andoni: «recuperar que los testimonios destacados se pinten como antes»: vuelve el carboncillo que se dibuja (rondas 68–72);
+        // el motor del roble (pintarConMotor) queda guardado, sin usar
+        void pintarConMotor;
+        const nuevo = lienzos[1 - frente], viejo = lienzos[frente];
+        viejo.classList.remove('on');
+        if (SALIDA) await new Promise((r) => setTimeout(r, SALIDA));
+        if (mia !== gen) return;
+        const P = preparar(img, nuevo); if (!P) return;
+        anchoR = innerWidth; frente = 1 - frente;
+        nuevo.style.zIndex = '2'; viejo.style.zIndex = '1';
+        nuevo.classList.add('on');
+        if (!dibujado || reducido) { pintar(nuevo, P, 1); return; }
+        const t0 = performance.now(), DUR = 1600;
+        let impar = false;
+        const paso = (ahora: number) => {
+          if (mia !== gen) return;
+          const p = Math.min(1, (ahora - t0) / DUR);
+          impar = !impar;
+          if (impar || p >= 1) pintar(nuevo, P, 1 - Math.pow(1 - p, 1.5)); // a 30 fps: el dibujo avanza igual y el hilo queda libre la mitad de los fotogramas
+          if (p < 1) requestAnimationFrame(paso);
+        };
+        requestAnimationFrame(paso);
+      };
+      // la CITA sube PALABRA A PALABRA (el gesto de los titulares): cada palabra en su caja con su índice (--w) para el escalón; el nombre y el cargo
+      // entran cuando la cita va por la mitad (--dq, según su largo)
+      const citas = grupos[0];
+      citas.forEach((q, i) => {
+        const palabras = (q.textContent || '').trim().split(/\s+/);
+        q.textContent = '';
+        palabras.forEach((w, j) => {
+          const caja = document.createElement('span'), dentro = document.createElement('span');
+          caja.className = 'w'; caja.style.setProperty('--w', String(j)); dentro.textContent = w; caja.append(dentro);
+          q.append(caja, j < palabras.length - 1 ? ' ' : '');
+        });
+        q.classList.add('partida');
+        grupos[1][i]?.style.setProperty('--dq', `${Math.round(Math.min(palabras.length, 40) * 24 * 0.55 + 120)}ms`);
+      });
+      const pila = voz.querySelector<HTMLElement>('.citas');
+      const ajustarPila = (n: number) => {
+        if (!pila) return;
+        if (!matchMedia('(width >= 64rem)').matches) { pila.style.height = ''; return; }
+        pila.style.height = `${citas[n].offsetHeight}px`;
+      };
+      // RONDA 290 · Eric (móvil): «las flechas tienen que ser flexibles»: la caja del nombre y el cargo mide lo que el activo (los cargos largos ocupan dos líneas)
+      const quienes = voz.querySelector<HTMLElement>('.quienes');
+      const ajustarQuien = (n: number) => { if (quienes && grupos[1][n]) quienes.style.height = `${grupos[1][n].offsetHeight}px`; };
+      const mostrar = (n: number) => {
+        ajustarPila(n); ajustarQuien(n);
+        grupos.forEach((g) => g.forEach((el, i) => { el.classList.toggle('on', i === n); if (el.hasAttribute('aria-hidden')) el.setAttribute('aria-hidden', String(i !== n)); }));
+        voz.classList.add('vista');
+      };
+      // sin movimiento reducido, nada está puesto hasta que la sección asoma (entonces entra todo a la vez)
+      if (!reducido) { grupos.forEach((g) => g.forEach((el) => el.classList.remove('on'))); voz.classList.add('js'); }
+      const poner = (n: number) => {
+        k = (n + grupos[0].length) % grupos[0].length;
+        const vn = voz.querySelector('[data-voz-n]'); if (vn) vn.textContent = `${String(k + 1).padStart(2, '0')}/${String(grupos[0].length).padStart(2, '0')}`;
+        pintarRetrato(k);
+      };
+      // la primera vez, al asomar: el retrato se dibuja y la cita sube con él
+      new IntersectionObserver((e, o) => { if (e[0].isIntersecting) { pintarRetrato(0); o.disconnect(); } }, { threshold: 0.35 }).observe(voz);
+      addEventListener('resize', () => { ajustarPila(k); ajustarQuien(k); });
+      addEventListener('resize', () => { const img = fuentes[k], cv = lienzos[frente]; if (motorCv || !img.naturalWidth || innerWidth === anchoR) return; anchoR = innerWidth; gen++; const P = preparar(img, cv); if (P) pintar(cv, P, 1); });
+      const programar = () => { clearTimeout(reloj); if (visible && !quieto && !reducido) reloj = window.setTimeout(() => { poner(k + 1); programar(); }, 9000); };
+      voz.querySelectorAll<HTMLButtonElement>('[data-paso]').forEach((b) => b.addEventListener('click', () => { poner(k + Number(b.dataset.paso)); programar(); }));
+      // RONDA 290 · Eric: «que se pueda deslizar (drag) el movimiento, que no solo sean las flechas; en escritorio también»: arrastre horizontal (dedo o ratón) sobre el
+      // testimonio = anterior / siguiente. El gesto vertical sigue siendo scroll (touch-action: pan-y).
+      let g0: { x: number; y: number; id: number } | null = null;
+      voz.addEventListener('pointerdown', (e) => { if ((e.target as HTMLElement).closest('button, a') || (e.pointerType === 'mouse' && e.button !== 0)) return; g0 = { x: e.clientX, y: e.clientY, id: e.pointerId }; });
+      const fin = (e: PointerEvent) => {
+        if (!g0 || e.pointerId !== g0.id) return;
+        const dx = e.clientX - g0.x, dy = e.clientY - g0.y; g0 = null;
+        if (e.type === 'pointerup' && Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy) * 1.5) { poner(k + (dx < 0 ? 1 : -1)); programar(); }
+      };
+      voz.addEventListener('pointerup', fin); voz.addEventListener('pointercancel', fin);
+      voz.addEventListener('pointerenter', () => { quieto = true; programar(); });
+      voz.addEventListener('pointerleave', () => { quieto = false; programar(); });
+      new IntersectionObserver((e) => { visible = e[0].isIntersecting; programar(); }, { threshold: 0.3 }).observe(voz);
+    }
+  }
+  // 27/10 · EL BOTONCITO DE ESCENA (el de /proyectos): cambia la escena de la card (navegador · mesa · móvil) poniendo su clase de forma en la pieza; la nueva entra
+  // enfocándose. Las fotos de la mesa elegida se piden entonces (llevan data-src); los vídeos, como siempre (póster al verse, fuente al sonar)
+  {
+    const FORMAS = ['mancha', 'claro', 'escena', 'movil'];
+    const quieto = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    document.querySelectorAll<HTMLElement>('[data-celda]').forEach((celda) => {
+      const pz = celda.querySelector<HTMLElement>('[data-pieza]')!;
+      celda.querySelector('[data-escenas]')?.addEventListener('click', (e) => {
+        const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-escena]');
+        if (!b || b.getAttribute('aria-pressed') === 'true') return;
+        const f = b.dataset.escena!;
+        celda.querySelectorAll<HTMLButtonElement>('[data-escena]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+        const ve = pz.querySelector<HTMLElement>(`.lamina > [data-f="${f}"]`);
+        ve?.querySelectorAll<HTMLImageElement>('img[data-src]').forEach((im) => { if (!im.getAttribute('src')) im.src = im.dataset.src!; });
+        pz.classList.remove('interactivo', 'centra', ...FORMAS);
+        pz.classList.add(f === 'navegador' ? pz.dataset.nav! : f);
+        pz.dataset.forma = f;
+        // la pantalla en perspectiva necesita la escala real de su mesa (oculta medía 0)
+        if (ve?.matches('[data-mesa-quad]')) ve.style.setProperty('--s', String(ve.offsetWidth / 1672));
+        // el póster del vídeo de la escena que llega (el observador de carteles no ve lo que estaba oculto)
+        ve?.querySelectorAll<HTMLVideoElement>('video[data-poster]').forEach((v) => { if (!v.poster) v.poster = v.dataset.poster!; });
+        pz.dispatchEvent(new Event('pieza:forma'));
+        if (quieto) return;
+        pz.classList.remove('aparece'); void pz.offsetWidth; pz.classList.add('aparece');
+        setTimeout(() => pz.classList.remove('aparece'), 650);
+      });
+    });
+    document.getElementById('anteriores')?.classList.add('con-escenas'); // sin JS, el botoncito no está
+  }
+  // ENTRADA de cada pieza al asomar (sin JS o con movimiento reducido están ya puestas: los estados ocultos cuelgan de html.anima)
+  const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('visto'); io.unobserve(e.target); } }), { rootMargin: '0px 0px -12% 0px', threshold: 0.12 });
+  document.querySelectorAll('[data-pieza]').forEach((p) => io.observe(p));
+  // RONDA 77 · los HEROES que rotan en la pieza de entrada: cada 4,2 s, solo a la vista; el que se va se desenfoca y el que llega enfoca (el relevo de
+  // la casa) y el degradado vira a los colores de su web (@property --c1…3)
+  const rota = document.querySelector<HTMLElement>('[data-rota]');
+  if (rota && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const hs = [...rota.querySelectorAll<HTMLElement>('[data-heroe]')], ns = [...rota.closest('.pieza')!.querySelectorAll<HTMLElement>('[data-heroe-n]')], colores: string[][] = JSON.parse(rota.dataset.colores!), claros: boolean[] = JSON.parse(rota.dataset.claros!);
+    let k = 0, reloj = 0;
+    // RONDA 78 · «al cambiar entre proyectos, que tenga alguna animación»: el navegador que se va se hunde y se desenfoca; el nuevo SUBE desde abajo a su
+    // sitio (como entran las piezas); el nombre sale palabra a palabra por arriba y el nuevo sube desde su máscara (el gesto de los titulares)
+    const sig = () => {
+      const va = k; hs[va].classList.remove('on'); hs[va].classList.add('sale'); ns[va].classList.remove('on'); ns[va].classList.add('sale');
+      setTimeout(() => { hs[va].classList.remove('sale'); ns[va].classList.remove('sale'); }, 1700);
+      k = (k + 1) % hs.length; hs[k].classList.add('on'); ns[k].classList.add('on');
+      colores[k].forEach((c, i) => rota.style.setProperty(`--c${i + 1}`, c));
+      rota.classList.toggle('tinta-oscura', claros[k]);
+    };
+    // ronda 190: las capturas, ya descodificadas antes del primer relevo (el que llegaba entraba en blanco y se pintaba a media pasada)
+    new IntersectionObserver((e) => { clearInterval(reloj); if (e[0].isIntersecting) { rota.querySelectorAll('img').forEach((im) => im.decode().catch(() => {})); reloj = window.setInterval(sig, 4600); } }, { threshold: 0.3 }).observe(rota);
+  }
+</script>
+
+<style>
+  /* RONDA 292 · la sección anterior (savvia agentic) ya es clara y deja su aire abajo: sin segundo relleno arriba */
+  /* el aire sobre el mosaico va de PADDING de la sección: como margen, se colapsaba hacia fuera y dejaba ver el Cacao del fondo entre secciones */
+  .anteriores { padding-top: calc(var(--spacing) * 12); } /* ronda 292: «menos aire» tras el pie de savvia agentic */
+  @media (width >= 48rem) { .anteriores { padding-top: calc(var(--spacing) * 24); } }
+  @media (width < 48rem) { .anteriores { padding-bottom: calc(var(--spacing) * 12); } } /* ronda 292 · móvil: menos aire antes de Servicios */
+
+  /* RONDA 77 · fuera «Todos los proyectos» de la cabecera (Andoni); la pieza de entrada lleva a /proyectos */
+  /* RONDA 76 · fuera el cilindro (Eric: «no me convence; en la cuadrícula las cruces no encajan mientras gira»; guardado en tools/retirados/cilindro.r75.txt) */
+  #anteriores {
+    overflow-x: clip;
+  }
+  /* ronda 215 · Eric: «hay mucho espacio» tras el último proyecto: el relleno de abajo, a la mitad (192 → 96 px) */
+  #anteriores { padding-bottom: max(3rem, calc(var(--space-section) / 2)); }
+  /* ronda 216 · Eric: «que lo naranja no quede por encima de los mockups; que quede por detrás»: la gota de Servicios (.sube, z-index 3, sube sobre el final de esta sección)
+     pasa por DETRÁS de las cards: el contenido, por encima (z-index 4) */
+  #anteriores > .wrap { position: relative; z-index: 4; }
+  .mosaico {
+    transform-style: flat;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: calc(var(--spacing) * 24) calc(var(--spacing) * 6);
+  }
+  .pieza {
+    display: block;
+    min-width: 0;
+  }
+  .pieza[role='button'] { cursor: pointer; } /* 30/10: sin `href`, el navegador no pone la mano */
+  /* 27/10 · la CELDA del mosaico: lleva el sitio (antes en la pieza) y, encima de la card y fuera del enlace, el botoncito de escena */
+  .celda { position: relative; min-width: 0; }
+  .banda, .cuadricula-arriba { grid-column: 1 / -1; }
+  /* ── EL TESTIMONIO que rota (ronda 66): el retrato al carboncillo a la izquierda, la cita en Family y quién la dice entre dos flechas finas; en claro */
+  .voz {
+    display: grid;
+    gap: calc(var(--spacing) * 8);
+    touch-action: pan-y; /* el arrastre horizontal cambia de testimonio (JS); el vertical, scroll */
+    -webkit-user-select: none;
+    user-select: none;
+    align-items: center;
+    margin-block: calc(var(--spacing) * 8);
+  }
+  .retratos {
+    display: grid;
+    width: min(80%, 18rem); /* móvil: más pequeña (Eric), un pelín más grande en la ronda 290; desde 64rem, el 100 % de su columna */
+    aspect-ratio: 1 / 1;
+    justify-self: center;
+  }
+  .fuente-r { display: none; }
+  .retratos { position: relative; }
+  .retrato-cv {
+    grid-area: 1 / 1;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    filter: blur(6px);
+    transition: opacity 0.35s cubic-bezier(0.4, 0, 1, 1), filter 0.35s cubic-bezier(0.4, 0, 1, 1);
+  }
+  .retrato-cv.on { opacity: 1; filter: none; transition: opacity 0.2s ease; }
+  .retrato-cv { mix-blend-mode: multiply; } /* ronda 69: la tinta se hunde en el grano del papel */
+  .retrato-cv.motor { mix-blend-mode: normal; } /* ronda 152: el motor del roble ya se funde con el papel */
+  /* RONDA 193 · Eric: «el espacio entre reseña y nombre siempre el mismo; centramos el contenido aunque unas sean más altas». Cada cita va pegada
+     al pie de la pila (el hueco hasta el nombre no cambia) y en escritorio la pila mide lo que la cita activa (lo pone el JS al relevar, con la
+     anterior ya ida): el bloque, centrado junto al retrato. En móvil se reserva la más alta, para que la página no salte. */
+  .citas { display: grid; grid-template-rows: minmax(0, 1fr); }
+  @media (width >= 64rem) { .voz.js .citas { transition: height 0.45s cubic-bezier(0.22, 1, 0.36, 1); } }
+  .vq {
+    grid-area: 1 / 1;
+    align-self: end;
+    font-size: var(--text-h3);
+    line-height: 1.2;
+    text-wrap: pretty;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+  }
+  .vq.on { opacity: 1; }
+  /* RONDA 193 · la cita sube palabra a palabra (sustituye al tecleo de la ronda 68): la que llega espera a que se vaya la anterior (--d0) y cada
+     palabra sale 24 ms después de la anterior; la que se va, todas a la vez y más rápido */
+  .voz { --sube: cubic-bezier(0.22, 1, 0.36, 1); --d0: 0ms; }
+  .vq.partida { opacity: 1; transition: none; }
+  .vq.partida :global(.w) { display: inline-block; }
+  .vq.partida :global(.w > span) {
+    display: inline-block;
+    opacity: 0;
+    transform: translateY(0.45em);
+    filter: blur(6px);
+    transition: opacity 0.3s ease, transform 0.35s cubic-bezier(0.4, 0, 1, 1), filter 0.3s ease;
+  }
+  .vq.partida.on :global(.w > span) {
+    opacity: 1;
+    transform: none;
+    filter: none;
+    transition: opacity 0.7s ease, transform 0.9s var(--sube), filter 0.7s ease;
+    transition-delay: calc(var(--d0) + var(--w) * 24ms);
+  }
+  .autor {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--spacing) * 3);
+    margin-top: calc(var(--spacing) * 8);
+  }
+  .quienes { display: grid; min-width: 0; }
+  .quien {
+    grid-area: 1 / 1;
+    align-self: start; /* su alto propio: el JS mide el activo para fijar la caja */
+    display: grid;
+    align-content: start; /* sin esto, el alto de la cita más larga reparte las filas y separa nombre y cargo */
+    gap: calc(var(--spacing) * 1);
+    --dq: 300ms;
+  }
+  .quien > * { opacity: 0; transform: translateY(0.5em); filter: blur(4px); transition: opacity 0.3s ease, transform 0.35s cubic-bezier(0.4, 0, 1, 1), filter 0.3s ease; }
+  .quien.on > * { opacity: 1; transform: none; filter: none; transition: opacity 0.7s ease, transform 0.9s var(--sube), filter 0.7s ease; transition-delay: calc(var(--d0) + var(--dq)); }
+  .quien.on > span { transition-delay: calc(var(--d0) + var(--dq) + 110ms); }
+  /* las flechas, la primera vez, al final del todo */
+  .voz.js .barra-voz { opacity: 0; transition: opacity 0.8s ease 0.9s; }
+  .voz.js.vista .barra-voz { opacity: 1; }
+  .quien b { font-weight: 500; color: var(--fg); }
+  .quien span { color: var(--fg2); }
+  /* RONDA 144 (2.ª) · Andoni: «los botones del slider de testimonios, a la derecha de los nombres, pegados a la guía derecha y mucho más sutiles,
+     mimetizados con el fondo»: la barra de la casa sin velo ni sombra, un filete del color de las reglas y la tinta apagada */
+  /* RONDA 144 (3.ª) · «los botones de cambiar de testimonio, debajo del nombre, y solo las flechas: sin número, sin la caja que lo rodea» */
+  .pie-voz { display: flex; flex-direction: column; align-items: flex-start; gap: calc(var(--spacing) * 4); margin-top: calc(var(--spacing) * 8); }
+  .pie-voz .autor { margin-top: 0; }
+  /* RONDA 290 · Eric (móvil): nombre y cargo más cerca de la reseña, y las flechas más arriba, cerca del nombre */
+  @media (width < 64rem) { .pie-voz { margin-top: calc(var(--spacing) * 4); gap: calc(var(--spacing) * 4); } }
+  .barra-voz {
+    gap: calc(var(--spacing) * 1);
+    padding: 0;
+    margin-left: calc(var(--spacing) * -2);
+    background: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: none;
+    color: var(--fg2);
+  }
+  .barra-voz .paso { width: calc(var(--spacing) * 8); height: calc(var(--spacing) * 8); }
+  .barra-voz .paso:hover:not(:disabled) { background: color-mix(in oklab, var(--fg) 8%, transparent); color: var(--fg); }
+  .barra-voz .paso :global(.btn-flecha) { width: 1rem; height: 1rem; }
+  /* RONDA 290 · táctil: sin hover real, el círculo se quedaba pegado tras el toque; fuera, y la flecha pegada a la guía */
+  @media (hover: none) { .barra-voz .paso:hover:not(:disabled) { background: transparent; color: var(--fg2); } }
+  /* y el área de toque de 44 px (antes 32: a veces no pasaba el slider); la flecha queda donde estaba (margen izquierdo y vertical compensados) */
+  @media (hover: none) {
+    .barra-voz { gap: 0; margin-left: calc(var(--spacing) * -3.5); margin-block: calc(var(--spacing) * -1.5); }
+    .barra-voz .paso { width: 2.75rem; height: 2.75rem; }
+  }
+
+  .flecha-v {
+    display: grid;
+    place-items: center;
+    width: calc(var(--spacing) * 10);
+    height: calc(var(--spacing) * 10);
+    border-radius: 50%;
+    color: var(--fg2);
+    transition: color 0.5s cubic-bezier(0.25, 1, 0.5, 1), background-color 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+  }
+  .flecha-v:hover { color: var(--fg); background: color-mix(in oklab, var(--fg) 8%, transparent); }
+  .flecha-v :global(.btn-flecha) { font-size: 1rem; } /* RONDA 135 · la flecha de la casa (sale y vuelve a entrar al pasar) */
+  @media (width >= 64rem) {
+    .voz { grid-template-columns: 5fr 7fr; gap: calc(var(--spacing) * 16); margin-block: calc(var(--spacing) * 16); }
+    .retratos { width: 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .item, .retrato-cv, .vq, .quien, .quien > *, .vq :global(.w > span) { transition: none !important; }
+  }
+  .lamina {
+    position: relative;
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+    border-radius: var(--radius-lg);
+    isolation: isolate;
+    container-type: inline-size;
+    /* RONDA 189 · Eric: «al pasar, el redondeado no va bien» (esquinas rectas mientras el fondo escala bajo la ventana de cristal): una máscara lisa
+       obliga al navegador a recortar con las esquinas también las capas compuestas */
+    -webkit-mask-image: linear-gradient(#000, #000);
+    mask-image: linear-gradient(#000, #000);
+  }
+  .entrada .lamina {
+    aspect-ratio: 3 / 2;
+    display: grid;
+    place-items: center;
+  }
+  .entrada .lamina { display: block; }
+  /* los que no están, fuera (con !important: la entrada de las piezas, html.anima .pieza.visto .mockup, pone opacidad y posición a todos los navegadores).
+     RONDA 78 · el relevo: el nuevo sube desde abajo (18 %) y enfoca; el que se va baja un poco y se desenfoca */
+  /* RONDA 81 · Andoni: «no me gusta cómo rotan; una animación más fluida»: sin desenfoque ni saltos. Los navegadores van en FILA, como una tira que avanza:
+     el que está se desliza hacia la izquierda y el siguiente entra por la derecha a la vez, con la misma curva lenta (1,4 s, entrada y salida suaves) */
+  /* RONDA 190 · Eric: «como pasan las slides tiene que ser más smooth» (el que llega ya trae su captura cargada y descodificada) y después «el
+     slider me sigue sin gustar: tiene que ser fade»: FUNDIDO cruzado en su sitio: el que llega aparece encima mientras el que se
+     va se apaga debajo (1,2 s), sin desplazamiento. */
+  /* (con !important: la regla de entrada html.anima .pieza.visto .mockup pisaba la transición y el relevo saltaba de golpe) */
+  .heroe { transition: opacity 1.2s ease !important; }
+  .heroe:not(.on) { opacity: 0 !important; transition: none !important; }
+  .heroe.on { z-index: 1; }
+  .heroe.sale { opacity: 0 !important; transition: opacity 1.2s ease 0.3s !important; }
+  .heroe.on { opacity: 1 !important; }
+  .heroe img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; object-position: 50% 0; }
+  .entrada .rota-n { display: grid; transition: color 0.8s ease; }
+  .entrada .rota-n > span { grid-area: 1 / 1; }
+  .entrada .pal { display: inline-block; overflow: hidden; vertical-align: top; padding-bottom: 0.08em; margin-right: 0.25em; }
+  /* RONDA 82 · «el titular anterior se vuelve a ver»: al quitarle `.sale`, la palabra volvía a su sitio de espera (abajo) ANIMADA y cruzaba la vista. El
+     regreso es instantáneo; solo se animan la entrada (.on) y la salida (.sale) */
+  .entrada .pal > span { display: inline-block; translate: 0 110%; transition: none; }
+  .entrada .rota-n > span.on .pal > span { translate: 0 0; transition: translate 1.1s cubic-bezier(0.65, 0, 0.35, 1) calc(0.25s + var(--n, 0) * 0.06s); }
+  .entrada .rota-n > span.sale .pal > span { translate: 0 -110%; transition: translate 0.9s cubic-bezier(0.65, 0, 0.35, 1); }
+  .entrada .rota-n .pal:nth-child(2) > span { --n: 1; }
+  .entrada .rota-n .pal:nth-child(3) > span { --n: 2; }
+  /* sobre el fondo claro de su web (Playground, Neety…), el nombre en Cacao y sin sombra */
+  /* RONDA 156 · cada nombre lleva SU tinta (la de su fondo), no el h3: así el que entra y el que sale no comparten color a medio relevo (Eric: «no se lee») */
+  .entrada .nombre > span.oscura { color: var(--color-cacao); text-shadow: none; }
+  @media (prefers-reduced-motion: reduce) { .entrada .pal > span { translate: none !important; } }
+  .rota { transition: --c1 1.4s cubic-bezier(0.65, 0, 0.35, 1), --c2 1.4s cubic-bezier(0.65, 0, 0.35, 1), --c3 1.4s cubic-bezier(0.65, 0, 0.35, 1); }
+  /* RONDA 268 · Eric (móvil, card a card): «sigue muy alta»: en móvil (< 64rem) todas las piezas de navegador (mancha y claro) van en 1:1, no en el 4:5 de base: sobraba un
+     cuarto vacío debajo. Las que en escritorio son 4:5 (Kymatio, THX) llevan el navegador más arriba (su 23 % de aire estaba medido para el 4:5). */
+  /* y más aire al final: la gota de la sección que llega (24 lvh de alto) le tocaba el nombre de THX */
+  @media (width < 64rem) {
+    #anteriores { padding-bottom: calc(var(--space-section) + var(--spacing) * 24); }
+    /* (por el sitio de la card, no por la escena que se ve: al cambiarla con el botoncito, la card no cambia de alto) */
+    .pieza:is([data-tipo='mancha'], [data-tipo='claro']) .lamina { aspect-ratio: 1 / 1; }
+    .pieza[data-slug='kymatio'] .mockup,
+    .pieza[data-slug='thx'] .mockup { top: 12%; }
+  }
+  @media (width >= 64rem) {
+    .mosaico {
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      align-items: start;
+      row-gap: calc(var(--spacing) * 36); /* ronda 292: 144 px entre filas (antes 192; «aquí menos aire»); el aire extra entre la 2.ª y la 3.ª va en `baja`; ronda 67: «más aire entre todo el contenido verticalmente» (antes 32) */
+    }
+    .celda {
+      grid-column: var(--col);
+      margin-top: calc(var(--spacing) * var(--baja, 0));
+    }
+    .pieza .lamina {
+      aspect-ratio: var(--ratio);
+    }
+    .entrada {
+      grid-column: 1 / span 3;
+    }
+    .entrada .lamina {
+      aspect-ratio: 1 / 1;
+    }
+  }
+
+  /* 27/10 · las ESCENAS de cada card (el botoncito): solo la de su forma (la clase de la pieza); las demás, fuera */
+  .pieza:not(.mancha):not(.claro) .lamina > [data-f='navegador'],
+  .pieza:not(.escena) .lamina > [data-f='escena'],
+  .pieza:not(.movil) .lamina > [data-f='movil'] { display: none; }
+  /* en la mesa (monitor o móvil), sin el fondo de marca: la foto lo cubre (las cards de mesa también llevan g-marca, para cuando enseñan el navegador) */
+  .pieza:is(.escena, .movil) .lamina::before { display: none; }
+  /* la mesa de otra escena: con su ampliación, sin dejar huecos en los bordes (obra/PiezaCasa.astro) */
+  .mesa.alt {
+    left: clamp(100cqw - var(--z) * 100cqw, var(--left) * 1cqw, 0px);
+    top: clamp(100cqh - var(--z) * 56.25cqw, var(--cy) * 100cqh - var(--py) * var(--z) * 56.25cqw, 0px);
+  }
+
+  /* ── el botoncito de ESCENA (27/10, Eric; el de /proyectos, Portfolio.astro): arriba a la izquierda de la card, la cápsula de cristal del icono de vídeo, con las
+     escenas que tiene el proyecto; la que se ve, marcada. Con ratón asoma al pasar por la card; en táctil, siempre */
+  .escenas {
+    position: absolute;
+    z-index: 4;
+    top: calc(var(--spacing) * 3);
+    left: calc(var(--spacing) * 3);
+    display: flex;
+    gap: 2px;
+    padding: 3px;
+    border-radius: var(--radius-full);
+    background: color-mix(in oklab, #1a1210 55%, transparent);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    transition: opacity 0.4s ease, filter 0.4s ease, scale 0.5s var(--ease-out-expo);
+  }
+  .escenas button {
+    display: grid;
+    place-items: center;
+    width: calc(var(--spacing) * 7);
+    height: calc(var(--spacing) * 7);
+    border-radius: var(--radius-full);
+    color: color-mix(in oklab, var(--color-niebla) 62%, transparent);
+    cursor: pointer;
+    transition: color 0.25s ease, background-color 0.25s ease;
+  }
+  .escenas button:hover { color: var(--color-niebla); }
+  .escenas button[aria-pressed='true'] { background: var(--color-niebla); color: var(--color-cacao); cursor: default; }
+  .escenas button:focus-visible { outline: 2px solid var(--color-niebla); outline-offset: 1px; }
+  .escenas svg { width: calc(var(--spacing) * 4); height: calc(var(--spacing) * 4); fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+  @media (hover: hover) {
+    .celda:not(:hover):not(:focus-within) .escenas { opacity: 0; filter: blur(4px); scale: 0.9; pointer-events: none; }
+  }
+  /* no existe hasta que la card se descubre (.visto) y, al descubrirse, espera a que la lámina esté casi abierta (su recorte: 1,2 s, con el escalonado --i) */
+  :global(html.anima) .celda > .pieza:not(.visto) ~ .escenas { opacity: 0; visibility: hidden; }
+  :global(html.anima) .celda > .pieza.visto ~ .escenas { animation: escenas-llega 0.4s ease calc(0.6s + var(--i, 0) * 110ms) backwards; }
+  @keyframes escenas-llega { from { opacity: 0; filter: blur(4px); scale: 0.9; pointer-events: none; } }
+  /* sin JS no cambia nada: fuera */
+  #anteriores:not(.con-escenas) .escenas { display: none; }
+  /* el cambio: la escena nueva se enfoca (de desenfocada a nítida) */
+  .pieza.aparece .lamina > :is(.mockup, .mesa) { animation: escena-entra 0.6s var(--ease-out-expo); }
+  @keyframes escena-entra { from { opacity: 0; filter: blur(10px); } }
+  @media (prefers-reduced-motion: reduce) { .escenas { animation: none !important; } }
+
+  /* ── LOS FONDOS de degradado: manchas muy desenfocadas (aerógrafo) + el grano de la web. Cada uno, distinto. */
+  .lamina[class*='g-']::before {
+    content: '';
+    position: absolute;
+    inset: -30%;
+    z-index: -2;
+    background: var(--manchas);
+    filter: blur(34px);
+    transition: transform 1.6s var(--ease-out-expo);
+  }
+  .lamina::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: none;
+  }
+  /* de MARCA: los tres colores medidos en la web del cliente (fondo, secundario, acento) */
+  .g-marca {
+    --manchas: radial-gradient(70% 60% at 72% 22% in oklab, var(--c2), transparent 72%), radial-gradient(55% 55% at 8% 96% in oklab, var(--c3), transparent 70%), var(--c1); /* ronda 154: mezcla en oklab (sin grises turbios) */
+  }
+  .rota {
+    transition: --c1 1.4s ease, --c2 1.4s ease, --c3 1.4s ease;
+  }
+  .claro,
+  .tel {
+    --nombre-tinta: var(--color-cacao);
+  }
+  /* RONDA 76 · el fondo de MARCA con imagen (la madera de Naterra, los aerogeneradores de Isotrol) en lugar de las manchas */
+  .lamina.con-fondo::before {
+    inset: 0;
+    background: var(--fondo) center / cover no-repeat;
+    filter: none;
+  }
+  .pieza:hover .lamina.con-fondo::before { transform: scale(1.04); }
+  /* RONDA 206 · Eric: «Kymatio no lo has puesto como el artefacto»: el degradado de hoy, tal cual lo pinta el artefacto «Fondos de proyectos» (las dos manchas sobre
+     la propia pieza), sin el desenfoque ni el 160 % de antes, que desplazaba las manchas */
+  .lamina.g-marca:not(.con-fondo)::before { inset: 0; filter: none; }
+  /* RONDA 189 · el BARRIDO: el paisaje de la estación con desenfoque de movimiento; vira con ella (fundido de 1,2 s) */
+  .lamina.barrido::before {
+    background: var(--b-otono) center / cover no-repeat;
+    transition: transform 1.6s var(--ease-out-expo); /* ronda 232: sin fundido de background-image (el relevo lo hace el script, como el hero) */
+  }
+  :global(html[data-estacion='primavera']) .lamina.barrido::before { background-image: var(--b-primavera); }
+  :global(html[data-estacion='verano']) .lamina.barrido::before { background-image: var(--b-verano); }
+  :global(html[data-estacion='invierno']) .lamina.barrido::before { background-image: var(--b-invierno); }
+  /* RONDA 190 · fuera el canto de NUBE de la ronda 189 (Eric: «se han quedado legacy»; Andoni: «no me convence que los bordes de la card se
+     difuminen»): las piezas de paisaje, con las esquinas nítidas de todas. */
+  .lamina.barrido::before { inset: -2%; }
+  /* Eric: «bajamos un poco el aire de arriba»: la ventana sube del 34 % al 24 % */
+  .lamina.barrido .mockup { top: 24%; }
+
+  /* el TELÉFONO de Remerge: de pie en el centro, algo ladeado, con su web móvil */
+  .tel-m {
+    position: absolute;
+    left: 50%;
+    top: 16%;
+    width: 38%;
+    aspect-ratio: 390 / 844;
+    translate: -50% 0;
+    rotate: var(--giro, -4deg);
+    padding: 2.4%;
+    border-radius: 14% / 6.5%;
+    background: #141214;
+    box-shadow: 0 0 0 1px rgb(0 0 0 / 0.3), 0 28px 50px -14px rgb(40 36 10 / 0.55);
+    transition: translate 0.9s var(--ease-out-expo), rotate 0.9s var(--ease-out-expo);
+  }
+  .tel-pant { display: block; width: 100%; height: 100%; overflow: hidden; border-radius: 11.5% / 5.3%; background: #fbfbfa; }
+  .tel-pant :global(.vid) { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 0; }
+  .pieza:hover .tel-m { translate: -50% -3%; rotate: 0deg; }
+
+  /* los LOGOTIPOS que rotan: cada uno es una máscara (se pinta en Rosa niebla, o en Cacao sobre el amarillo de Remerge) */
+  .logos {
+    position: relative;
+    width: 62%;
+    aspect-ratio: 5 / 2;
+  }
+  .logos i {
+    position: absolute;
+    inset: 0;
+    background: var(--color-niebla);
+    -webkit-mask: var(--logo) center / contain no-repeat;
+    mask: var(--logo) center / contain no-repeat;
+    opacity: 0;
+    filter: blur(16px);
+    scale: 0.97;
+    transition: opacity 0.8s ease, filter 1s ease, scale 1s var(--ease-out-expo), background-color 1s ease;
+  }
+  .logos i.on {
+    opacity: 1;
+    filter: blur(0);
+    scale: 1;
+    transition-delay: 0.25s; /* el que llega entra cuando el que se va ya se ha desenfocado */
+  }
+  .logos i:nth-child(4) {
+    background: var(--color-cacao); /* Remerge: fondo claro */
+  }
+
+  /* ── el icono de vídeo: una píldora de cristal oscuro arriba a la derecha; al pasar crece un poco y, mientras el vídeo suena, se retira */
+  .vid-ic {
+    position: absolute;
+    z-index: 3;
+    right: calc(var(--spacing) * 3);
+    bottom: calc(var(--spacing) * 3);
+    display: inline-flex;
+    align-items: center;
+    gap: calc(var(--spacing) * 1);
+    padding: calc(var(--spacing) * 2);
+    border-radius: var(--radius-full);
+    background: color-mix(in oklab, #1a1210 55%, transparent);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    color: var(--color-niebla);
+    transition: opacity 0.4s ease, scale 0.5s var(--ease-out-expo), filter 0.4s ease;
+  }
+  .vid-ic :global(svg) {
+    width: calc(var(--spacing) * 4);
+    height: calc(var(--spacing) * 4);
+  }
+  /* en táctil no hay vídeo que anunciar (de pie se queda el póster): fuera el icono */
+  @media (hover: none) { .vid-ic { display: none; } }
+  .pieza:hover .vid-ic {
+    scale: 1.06;
+  }
+  .pieza.suena .vid-ic {
+    opacity: 0;
+    filter: blur(4px);
+  }
+
+  /* la lupa (RONDA 215): misma cápsula de cristal que el icono de vídeo y en su mismo sitio; al pasar, el de vídeo se va y entra la lupa, que invita al clic (abre el visor) */
+  .abre-ic {
+    position: absolute;
+    z-index: 3;
+    right: calc(var(--spacing) * 3);
+    bottom: calc(var(--spacing) * 3);
+    display: inline-flex;
+    padding: calc(var(--spacing) * 2);
+    border-radius: var(--radius-full);
+    background: color-mix(in oklab, #1a1210 55%, transparent);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    color: var(--color-niebla);
+    opacity: 0;
+    scale: 0.7;
+    filter: blur(4px);
+    pointer-events: none;
+    transition: opacity 0.4s ease, scale 0.5s var(--ease-out-expo), filter 0.4s ease;
+  }
+  .abre-ic svg { width: calc(var(--spacing) * 4); height: calc(var(--spacing) * 4); }
+  @media (hover: hover) {
+    .pieza:hover .abre-ic, .pieza:focus-visible .abre-ic { opacity: 1; scale: 1; filter: none; }
+    .pieza:hover .vid-ic, .pieza:focus-visible .vid-ic { opacity: 0; filter: blur(4px); }
+  }
+  /* 28/10 · Eric: «¿y un usuario sin hover?» · «en este estado algo tiene que haber que incite el clic, sutil»: con caso, la FLECHA ocupa SIEMPRE el sitio de la
+     cámara (en reposo, en táctil y al pasar, cuando crece un pelo como la cámara); las demás siguen con cámara y lupa */
+  .pieza[data-caso] .vid-ic { display: none; }
+  .pieza[data-caso] .abre-ic { opacity: 1; scale: 1; filter: none; }
+  @media (hover: hover) { .pieza[data-caso]:is(:hover, :focus-visible) .abre-ic { scale: 1.06; } }
+  /* RONDA 162 · Eric: «el título del cliente arriba a la izquierda no me convence; puede estar en el pie de la card». En las piezas de proyecto el
+     nombre baja al PIE, fuera de la imagen: nombre en Family a tamaño medio y, a la derecha, dominio · sector. La imagen queda limpia.
+     (La pieza de entrada, la que rota, conserva su nombre encima: su relevo vive ahí.) */
+  .pie-pieza {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: calc(var(--spacing) * 4);
+    flex-wrap: wrap;
+  }
+  .nombre-pie {
+    font-size: clamp(1.25rem, 1rem + 0.6vw, 1.625rem);
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    color: var(--fg);
+  }
+  .pie-pieza .detail { text-align: right; }
+  /* ── el nombre, grande, encima (arriba a la izquierda) */
+  .nombre {
+    position: absolute;
+    z-index: 2;
+    left: calc(var(--spacing) * 4);
+    top: calc(var(--spacing) * 3);
+    right: calc(var(--spacing) * 4);
+    font-size: var(--text-h3);
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    /* RONDA 156 · Eric: «la tipo debería ser blanca; en dark queda poco legible, y tiene que ir sincronizado con la estación»: el nombre va sobre el
+       FONDO DE LA PIEZA (la marca del cliente), no sobre la página: blanco siempre, y Cacao solo si la marca es clara. Antes leía --tinta, que en
+       invierno es oscura: Routal o Quantus salían en oscuro sobre su fondo oscuro. */
+    color: var(--nombre-tinta, #f5f5f7);
+    text-wrap: balance;
+  }
+  .escena .nombre,
+  .mancha .nombre {
+    text-shadow: 0 1px 18px color-mix(in oklab, var(--color-cacao) 55%, transparent);
+  }
+  /* ronda 152: degradado claro (Monad) → el nombre en tinta oscura, sin sombra */
+  .pieza.tinta-oscura .nombre { color: var(--color-cacao); text-shadow: none; }
+
+  /* ── ESCENA: la mesa en una estación, con la web dentro del monitor. Todo en unidades de la propia pieza (cqw). */
+  .mesa {
+    position: absolute;
+    width: calc(var(--z) * 100cqw);
+    aspect-ratio: 16 / 9;
+    left: calc(var(--left) * 1cqw);
+    /* alto de la lámina ampliada = z·100·9/16 cqw; el centro de la pantalla (py) va a la altura cy de la pieza (su alto: 100cqh) */
+    top: calc(var(--cy) * 100cqh - var(--py) * var(--z) * 56.25cqw);
+    transition: scale 1.6s var(--ease-out-expo);
+    transform-origin: 50% var(--py);
+  }
+  .lamina:has(.mesa) {
+    container-type: size;
+  }
+  .mesa .foto {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  /* ronda 209: el móvil de la mesa, en la estación de la web (otoño si no hay otra) */
+  .mesa .foto-e { display: none; }
+  @media (hover: none) { .mesa .foto-e { transform: translateZ(0); } } /* (30/10) en táctil, en su capa: el fundido de estación no cambia el árbol de capas bajo el vídeo */
+  .mesa .foto-e[data-e='otono'] { display: block; }
+  :global(html[data-estacion='primavera']) .mesa .foto-e[data-e='primavera'],
+  :global(html[data-estacion='verano']) .mesa .foto-e[data-e='verano'],
+  :global(html[data-estacion='invierno']) .mesa .foto-e[data-e='invierno'] { display: block; }
+  :global(html:is([data-estacion='primavera'], [data-estacion='verano'], [data-estacion='invierno'])) .mesa .foto-e[data-e='otono'] { display: none; }
+  .mesa .pantalla {
+    position: absolute;
+    z-index: 2; /* por encima del grano de la pieza (::after, z 1): la web se ve limpia */
+    left: 39.03%;
+    top: 36.96%;
+    width: 21.78%;
+    height: 21.04%;
+    overflow: hidden;
+    /* ronda 190 · Eric: «se ve un mini marco blanco entre el marco del ordenador y el vídeo»: era el blanco de la pantalla de la lámina asomando en el
+       borde fraccionario (y el fondo claro de la caja). Fondo en el negro del bisel y un filo de 2 px de ese negro por fuera (como en Proyectos, ronda 159). */
+    background: #121213;
+    box-shadow: 0 0 0 2px #121213;
+  }
+  /* RONDA 43 · «Remerge e Isotrol no encajan bien en el mockup»: el <video> lo inserta set:html y NO lleva el ámbito de Astro: estas reglas no se
+     aplicaban nunca (el vídeo quedaba a su tamaño y con object-fit: contain: bandas en la pantalla y, en el móvil, la web recortada) → :global */
+  .mesa .pantalla :global(.vid) {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 0;
+  }
+  /* la pantalla en PERSPECTIVA: caja en % de la lámina y la homografía como matrix3d (sus píxeles, vía --s) */
+  .mesa .pantalla.quad {
+    transform-origin: 0 0;
+    /* RONDA 268 · Eric (Cubbo): «1 px en blanco arriba, entre el vídeo y el marco»: la caja era transparente y por la fila que el vídeo no cubría asomaba el blanco de la
+       pantalla de la lámina. Fondo en el negro del bisel (como en el monitor, ronda 190) */
+    background: #121213;
+    border-radius: 2px;
+  }
+  /* 27/10 · Eric: «tiene que ser muy fiel a la realidad» · «con muesca»: fuera el border-radius (12,5 % / 5,8 % ≈ 30 px; la foto, 20–24 y distinto en cada
+     esquina por la perspectiva). La MÁSCARA es el cristal de la propia lámina (tools/mesa-movil/mascara.cjs): esquinas y muesca, las de la foto */
+  .movil .mesa .pantalla.quad {
+    border-radius: 0;
+    box-shadow: none;
+    /* (Eric: «rellénala de negro»): la pantalla, negra (su fondo #121213) y con la forma del cristal real; el vídeo, dentro, con la forma limpia */
+    -webkit-mask: var(--cristal) 0 0 / 100% 100% no-repeat;
+    mask: var(--cristal) 0 0 / 100% 100% no-repeat;
+  }
+  /* el filo de la foto ondula: la caja negra va 4 px por fuera del cristal y el vídeo, dentro, en el rectángulo del cristal + 1 px (mesa-movil.json › video) */
+  .movil .mesa .pantalla.quad > :global(*) {
+    position: absolute;
+    left: var(--vx);
+    top: var(--vy);
+    width: var(--vw);
+    height: var(--vh);
+    -webkit-mask: var(--mascara) 0 0 / 100% 100% no-repeat;
+    mask: var(--mascara) 0 0 / 100% 100% no-repeat;
+  }
+  .escena .lamina::before,
+  .movil .lamina::before,
+  .roble .lamina::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    /* RONDA 162 · sin velo: el nombre ya no va sobre la foto */
+    background: none;
+  }
+  /* sobre la foto, un velo arriba para que el nombre se lea siempre (regla junto a la de las pantallas en perspectiva) */
+
+  /* ── el MOCKUP: una ventana de navegador con la web real.
+     RONDA 189 · Eric: «el mockup de la web, mucho mejor: más moderno y translúcido, y que el rectángulo de arriba no tenga tanto aire». La ventana
+     entera es CRISTAL (velo claro + desenfoque del fondo que hay detrás + filo de luz): un marco fino de 4 px alrededor de la web y una barra de 10 px
+     arriba, dentro del mismo cristal (sin franja propia); la web va dentro con sus esquinas redondeadas. */
+  .mockup {
+    --ease-suave: cubic-bezier(0.32, 0.72, 0, 1); /* ronda 206: sin rebote */
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    /* Eric: radios concéntricos, interior = exterior − relleno (12 − 4 = 8) */
+    --r-fuera: 6px; /* Eric: «demasiado redondeado»: 12 → 9; ronda 194, Andoni: «muy redondeado comparado con la card» (8 px): 9 → 6 (dentro, 6 − 3 = 3) */
+    --marco: 3px;
+    /* ronda 195 · Eric: «no hace falta que el mockup tenga la url arriba; que ocupe lo mismo abajo que arriba»: fuera la barra, el marco igual por los cuatro lados */
+    padding: var(--marco);
+    border-radius: var(--r-fuera);
+    overflow: hidden;
+    background: color-mix(in srgb, #fff 20%, transparent);
+    -webkit-backdrop-filter: blur(20px) saturate(1.6);
+    backdrop-filter: blur(20px) saturate(1.6);
+    box-shadow:
+      inset 0 0 0 1px rgb(255 255 255 / 0.32),
+      inset 0 1px 0 rgb(255 255 255 / 0.5),
+      0 0 0 1px rgb(0 0 0 / 0.08),
+      0 32px 60px -22px rgb(20 12 6 / 0.55);
+    transition: translate 0.9s var(--ease-out-expo), rotate 0.9s var(--ease-out-expo);
+  }
+  /* RONDA 67 · «el proyecto de Cubbo salía como de un lado, y ahora no; me gustaba como estaba y aplicarlo en otros proyectos»: vuelve el navegador que
+     ASOMA ladeado y se sale por un lado y por abajo (la ronda 18), en todas las piezas con navegador; el lado alterna (`izq`) */
+  .mancha .mockup,
+  .claro .mockup {
+    left: var(--mx, 14%);
+    top: var(--top, 34%); /* ronda 190 · Eric: «el aire de arriba hay que reducir» en las piezas altas (3:4): 20 % */
+    width: var(--mw, 118%);
+    rotate: var(--giro, -6deg);
+    transform-origin: 0 0;
+  }
+  .pieza.izq .mockup {
+    left: auto;
+    right: 14%;
+    transform-origin: 100% 0;
+  }
+  /* sobre un degradado claro, el cristal se oscurece un poco para que la ventana se lea */
+  .claro .mockup,
+  .tinta-oscura .mockup {
+    background: color-mix(in srgb, #302018 7%, transparent);
+    box-shadow:
+      inset 0 0 0 1px rgb(255 255 255 / 0.5),
+      0 0 0 1px rgb(48 32 24 / 0.1),
+      0 24px 48px -20px rgb(48 32 24 / 0.35);
+  }
+  /* la web dentro del cristal, con sus esquinas y su filo; también la imagen de los heroes que rotan en la pieza de entrada (Eric: «la parte interior, bordeada») */
+  .mockup :global(.vid),
+  .mockup.heroe > img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: calc(var(--r-fuera) - var(--marco));
+    box-shadow: 0 0 0 1px rgb(0 0 0 / 0.12);
+  }
+  /* Eric: «los puntitos no están bien puestos»: iban a 2 px del canto, montados en la curva de la esquina (radio 12). Ahora empiezan donde acaba la
+     curva de la web de dentro (radio interior = 8 px desde el marco) y van centrados en una barra de 12 px */
+  .cromo {
+    position: relative;
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    height: 12px;
+    padding-inline: calc(var(--r-fuera) - var(--marco));
+  }
+  .cromo i {
+    flex: none;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: rgb(255 255 255 / 0.55);
+    box-shadow: 0 0 0 0.5px rgb(0 0 0 / 0.12);
+  }
+  .claro .cromo i,
+  .tinta-oscura .cromo i { background: rgb(48 32 24 / 0.22); box-shadow: none; }
+  .cromo b {
+    position: absolute;
+    left: 50%;
+    translate: -50% 0;
+    max-width: 60%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--font-sans);
+    font-weight: 500;
+    font-size: 0.34rem;
+    letter-spacing: 0.01em;
+    color: rgb(255 255 255 / 0.78);
+  }
+  .claro .cromo b,
+  .tinta-oscura .cromo b { color: rgb(48 32 24 / 0.55); }
+
+  /* ── al pasar */
+  .escena:hover .mesa,
+  .escena:focus-visible .mesa,
+  .movil:hover .mesa,
+  .movil:focus-visible .mesa,
+  .roble:hover .mesa,
+  .roble:focus-visible .mesa {
+    scale: 1.06;
+  }
+  .pieza:is(a):hover .lamina[class*='g-']::before {
+    transform: scale(1.15) rotate(8deg);
+  }
+  .pieza:is(a):focus-visible {
+    outline: 2px solid var(--color-niebla);
+    outline-offset: calc(var(--spacing) * 1);
+  }
+
+  /* ── ENTRADA: la pieza se descubre de abajo arriba; su contenido llega un poco después */
+  :global(html.anima) .pieza .lamina {
+    clip-path: inset(100% 0 0 0 round var(--radius-lg));
+  }
+  :global(html.anima) .pieza .mockup,
+  :global(html.anima) .pieza .mesa,
+  :global(html.anima) .pieza .logos {
+    translate: 0 22%;
+  }
+  :global(html.anima) .pieza .mesa {
+    translate: 0 6%;
+    scale: 1.12;
+  }
+  :global(html.anima) .pieza .nombre,
+  :global(html.anima) .pieza .pie {
+    opacity: 0;
+  }
+  :global(html.anima) .pieza.visto .lamina {
+    clip-path: inset(0 0 0 0 round var(--radius-lg));
+    transition: clip-path 1.2s var(--ease-out-expo) calc(var(--i) * 110ms);
+  }
+  :global(html.anima) .pieza.visto .mockup,
+  :global(html.anima) .pieza.visto .mesa,
+  :global(html.anima) .pieza.visto .logos {
+    translate: 0 0;
+    scale: 1;
+    transition: translate 1.4s var(--ease-out-expo) calc(0.12s + var(--i) * 110ms), scale 1.8s var(--ease-out-expo) calc(var(--i) * 110ms), rotate 0.9s var(--ease-out-expo);
+  }
+  :global(html.anima) .pieza.visto .nombre,
+  :global(html.anima) .pieza.visto .pie {
+    opacity: 1;
+    transition: opacity 0.9s ease calc(0.55s + var(--i) * 110ms);
+  }
+  /* RONDA 206 · Eric: «al hacer hover, el mockup centrado y que se vea la web entera; al salir, vuelve al estado inicial» · «cuidado con el rebote de ida y vuelta,
+     smoothness»: el navegador (mancha y claro) se coloca por TRANSFORMACIÓN (translate + scale + rotate a 0; el JS mide cuánto) y no por left/top/width, con la misma
+     curva y duración y SIN retardo en la ida y en la vuelta (antes, la vuelta heredaba los retardos y duraciones distintas de la entrada: de ahí el rebote) */
+  :global(html.anima) .pieza.interactivo .mockup,
+  .pieza.interactivo .mockup {
+    transition: translate 0.8s var(--ease-suave), scale 0.8s var(--ease-suave), rotate 0.8s var(--ease-suave);
+    will-change: translate, scale, rotate;
+  }
+  :global(html.anima) .pieza.interactivo.centra .mockup,
+  .pieza.interactivo.centra .mockup {
+    translate: var(--hx, 0px) var(--hy, 0px);
+    scale: var(--hs, 1);
+    rotate: 0deg;
+  }
+  /* RONDA 290 · táctil: el navegador nace ya recto y centrado, sin transición (ni la de la entrada ni la del scroll) */
+  :global(html.anima) .pieza.fijo .mockup,
+  .pieza.fijo .mockup { transition: none !important; will-change: auto; }
+  :global(html.anima) .escena.visto:hover .mesa,
+  :global(html.anima) .movil.visto:hover .mesa,
+  :global(html.anima) .roble.visto:hover .mesa { scale: 1.06; transition: scale 1.6s var(--ease-out-expo); }
+  @media (prefers-reduced-motion: reduce) {
+    .mockup, .mesa, .lamina::before { transition: none; }
+  }
+
+  /* ── EL VISOR · RONDA 214 · Eric: «clic en cada card → el mockup en grande, rollo slider modal; cuida mucho el diseño». Velo Cacao con desenfoque, UNA lámina con el
+     fondo de la marca y la web grabada en grande, el nombre y el sector debajo y la barra de cristal de la casa. Fundido entre proyectos (como el slider de los destacados). */
+  .vis {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #f5f5f7;
+    overflow: hidden;
+  }
+  .vis[open] { display: grid; place-items: center; }
+  .vis::backdrop {
+    background: color-mix(in oklab, var(--color-cacao) 80%, transparent);
+    -webkit-backdrop-filter: blur(22px) saturate(1.2);
+    backdrop-filter: blur(22px) saturate(1.2);
+  }
+  .vis[open]::backdrop { animation: vis-velo 0.5s ease both; }
+  .vis.cierra::backdrop { animation: vis-velo 0.28s ease reverse both; }
+  @keyframes vis-velo { from { opacity: 0; } to { opacity: 1; } }
+  .vis-caja {
+    /* la lámina es 16:10 y cabe con su pie en cualquier ventana: ancho = min(ancho − márgenes, (alto − pie) × 1,6) */
+    --vw: min(100vw - calc(var(--spacing) * 8), 80rem, (100dvh - calc(var(--spacing) * 36)) * 1.6);
+    width: var(--vw);
+    display: grid;
+    gap: calc(var(--spacing) * 6);
+  }
+  .vis[open] .vis-caja { animation: vis-entra 0.7s var(--ease-out-expo) 0.05s both; }
+  .vis.cierra .vis-caja { animation: vis-sale 0.28s ease-in both; }
+  @keyframes vis-entra { from { opacity: 0; transform: translateY(24px) scale(0.965); } to { opacity: 1; transform: none; } }
+  @keyframes vis-sale { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(10px) scale(0.985); } }
+  .vis-panel {
+    position: relative;
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    isolation: isolate;
+    border-radius: var(--radius-lg);
+    container-type: size;
+    -webkit-mask-image: linear-gradient(#000, #000);
+    mask-image: linear-gradient(#000, #000);
+    touch-action: pan-y;
+  }
+  .vis-slide {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.7s ease, visibility 0s linear 0.7s;
+  }
+  .vis-slide.on { opacity: 1; visibility: visible; transition: opacity 0.7s ease; z-index: 1; }
+  /* ── 27/10 · la MESA (obra/Visor.astro): la lámina del estudio ampliada con el monitor en el centro del panel (sin huecos en los bordes) y la web dentro */
+  .vis-mesa {
+    position: absolute;
+    width: calc(var(--z) * 100cqw);
+    aspect-ratio: 16 / 9;
+    left: clamp(100cqw - var(--z) * 100cqw, 50cqw - var(--px) * var(--z) * 100cqw, 0px);
+    top: clamp(100cqh - var(--z) * 56.25cqw, 50cqh - var(--py) * var(--z) * 56.25cqw, 0px);
+    background: #2a1d17;
+  }
+  .vis-foto { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .vis-pant { position: absolute; left: 39.03%; top: 36.96%; width: 21.78%; height: 21.04%; overflow: hidden; background: #121213 no-repeat 50% 0 / cover; box-shadow: 0 0 0 2px #121213; }
+  .vis-pant .vis-vid { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 0; }
+  .vis-pant video.vis-vid { opacity: 0; }
+  .vis-pant video.vis-vid.listo { opacity: 1; }
+  /* el pie: quién (nombre grande y sector) a la izquierda; a la derecha, «Visitar la web» y la barra de cristal */
+  .vis-pie {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: calc(var(--spacing) * 6);
+    flex-wrap: wrap;
+  }
+  .vis-quien { display: grid; gap: calc(var(--spacing) * 1); min-width: 0; }
+  .vis-nombre {
+    font-size: clamp(1.5rem, 1.1rem + 1.2vw, 2.25rem);
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    color: #f5f5f7;
+  }
+  .vis-sector { color: color-mix(in oklab, #f5f5f7 62%, transparent); }
+  .vis-acciones { display: flex; align-items: center; gap: calc(var(--spacing) * 6); }
+  .vis-caso { color: #f5f5f7; } /* 30/10 · Eric: «queda descolgado»: junto a las flechas, no bajo el nombre */
+  .vis-caso[hidden] { display: none; }
+  .vis-abre { position: absolute; inset: 0; z-index: 2; cursor: pointer; }
+  .vis-abre[hidden] { display: none; }
+  /* cerrar: la misma cápsula de cristal, arriba a la derecha de la ventana */
+  .vis-x {
+    position: fixed;
+    top: calc(var(--spacing) * 4);
+    right: calc(var(--spacing) * 4);
+    z-index: 2;
+    padding: calc(var(--spacing) * 1);
+    cursor: pointer;
+  }
+  .vis-x :global(svg) { width: 1.25rem; height: 1.25rem; }
+  .vis[open] .vis-x { animation: vis-velo 0.6s ease 0.2s both; }
+  .vis.cierra .vis-x { opacity: 0; transition: opacity 0.2s ease; }
+  @media (width < 48rem) {
+    .vis-caja { --vw: min(100vw - calc(var(--spacing) * 6), (100dvh - calc(var(--spacing) * 44)) * 1.6); }
+    /* 28/10 · Eric: en móvil, «más zoom al escritorio» (el monitor llena casi el panel) y las flechas a la derecha del nombre, en la misma fila */
+    .vis-mesa { --z: 3.6 !important; }
+    .vis-pie { flex-wrap: wrap; align-items: flex-start; gap: calc(var(--spacing) * 4); }
+    .vis-quien { flex: 1 1 0; }
+    .vis-acciones { display: contents; }
+    .vis-caso { order: 1; flex: 0 0 100%; justify-content: flex-start; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .vis[open]::backdrop, .vis[open] .vis-caja, .vis[open] .vis-x { animation: none; }
+    .vis-slide, .vis-slide.on { transition: none; }
+  }
+</style>

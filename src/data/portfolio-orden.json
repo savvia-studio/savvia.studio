@@ -1,0 +1,570 @@
+{
+ "orden": [
+  "neety",
+  "wisable",
+  "surepayroll",
+  "monad",
+  "cubbo",
+  "patchbay",
+  "transcend-network",
+  "quantus",
+  "isotrol",
+  "thx",
+  "gsbindex",
+  "impact-bridge",
+  "fiallegas-abogados",
+  "junipero-vc",
+  "playground-agentico",
+  "stellar",
+  "kymatio",
+  "kabila",
+  "profounders-capital",
+  "naterra",
+  "home-of-ambrose",
+  "remerge",
+  "bluence",
+  "adaral",
+  "business-online-payroll",
+  "managerpro-by-codely",
+  "invopop",
+  "claudia-be",
+  "casa-for-agents",
+  "valuat",
+  "gow-delivery",
+  "homeplus-casavo",
+  "routal",
+  "eleven-lab",
+  "vitalera",
+  "zrive",
+  "ikon",
+  "kalma",
+  "greet",
+  "playground-iep",
+  "lyra",
+  "alpine-security",
+  "numen-games",
+  "endoaula-conecta",
+  "soundtown",
+  "endoaula",
+  "stemdo",
+  "qalea"
+ ],
+ "piezas": {
+  "neety": {
+   "forma": "movil",
+   "nav": [
+    -1,
+    18.5,
+    96,
+    3.5
+   ],
+   "t": {
+    "pais": [
+     "España"
+    ],
+    "tec": [
+     "Next.js",
+     "Sanity",
+     "Figma",
+     "Claude Code"
+    ],
+    "servicio": [
+     "Diseño web",
+     "Desarrollo agéntico",
+     "Animación",
+     "CMS",
+     "Sistema de diseño",
+     "Multidioma"
+    ],
+    "categoria": [
+     "Ventas B2B",
+     "SaaS"
+    ]
+   },
+   "ar": 1
+  },
+  "surepayroll": {
+   "forma": "navegador"
+  },
+  "monad": {
+   "forma": "navegador",
+   "nav": [
+    9,
+    17,
+    116,
+    4
+   ],
+   "ar": 0.92
+  },
+  "cubbo": {
+   "forma": "movil",
+   "zt": 2.45,
+   "ar": 0.8,
+   "nav": [
+    7,
+    21,
+    132,
+    0
+   ]
+  },
+  "thx": {
+   "forma": "navegador",
+   "nav": [
+    5.5,
+    23,
+    88,
+    0
+   ]
+  },
+  "gsbindex": {
+   "forma": "navegador",
+   "nav": [
+    9,
+    17,
+    115,
+    -2.5
+   ],
+   "c": [
+    "#ffffff",
+    "#ffffff",
+    "#28a4aa"
+   ]
+  },
+  "home-of-ambrose": {
+   "forma": "escena",
+   "zm": 3.55,
+   "ar": 0.8,
+   "nav": [
+    7,
+    21,
+    132,
+    0
+   ]
+  },
+  "kymatio": {
+   "forma": "navegador",
+   "nav": [
+    9,
+    20,
+    118,
+    4
+   ],
+   "ar": 0.9
+  },
+  "profounders-capital": {
+   "forma": "movil",
+   "nav": [
+    8,
+    20.5,
+    111,
+    4
+   ],
+   "ar": 0.8
+  },
+  "naterra": {
+   "forma": "navegador",
+   "ar": 0.85
+  },
+  "remerge": {
+   "forma": "navegador"
+  },
+  "bluence": {
+   "forma": "escena",
+   "nav": [
+    6,
+    25.5,
+    87,
+    0
+   ]
+  },
+  "lyra": {
+   "forma": "escena",
+   "nav": [
+    9,
+    16,
+    115,
+    -2
+   ],
+   "c": [
+    "#ffffff",
+    "#fafafa",
+    "#ffffff"
+   ]
+  },
+  "business-online-payroll": {
+   "forma": "escena",
+   "nav": [
+    6,
+    26,
+    118,
+    -2.5
+   ],
+   "c": [
+    "#ffffff",
+    "#ffffff",
+    "#ffffff"
+   ],
+   "zm": 3.9
+  },
+  "adaral": {
+   "forma": "movil",
+   "zm": 3.8
+  },
+  "numen-games": {
+   "forma": "navegador",
+   "nav": [
+    9,
+    20,
+    118,
+    4
+   ],
+   "oculto": true
+  },
+  "managerpro-by-codely": {
+   "forma": "movil",
+   "nav": [
+    10.5,
+    21,
+    104,
+    -2.5
+   ],
+   "ar": 0.92
+  },
+  "invopop": {
+   "forma": "escena",
+   "zm": 3.75,
+   "ar": 0.8
+  },
+  "endoaula-conecta": {
+   "forma": "navegador",
+   "nav": [
+    10,
+    23,
+    116,
+    4
+   ],
+   "oculto": true
+  },
+  "claudia-be": {
+   "forma": "navegador",
+   "nav": [
+    8.5,
+    26,
+    81,
+    0
+   ],
+   "ar": 1.08
+  },
+  "valuat": {
+   "forma": "movil",
+   "nav": [
+    5,
+    22,
+    91,
+    0
+   ],
+   "zm": 3.6,
+   "ar": 0.8
+  },
+  "casa-for-agents": {
+   "forma": "movil",
+   "nav": [
+    6,
+    17,
+    118,
+    -2.5
+   ],
+   "ar": 1.09
+  },
+  "gow-delivery": {
+   "forma": "escena"
+  },
+  "alpine-security": {
+   "forma": "movil",
+   "nav": [
+    9,
+    20,
+    118,
+    4
+   ],
+   "g": 4,
+   "oculto": true
+  },
+  "homeplus-casavo": {
+   "forma": "escena",
+   "nav": [
+    5,
+    17,
+    120,
+    -2
+   ],
+   "ar": 1
+  },
+  "soundtown": {
+   "forma": "escena",
+   "oculto": true
+  },
+  "endoaula": {
+   "forma": "navegador",
+   "nav": [
+    10,
+    23,
+    116,
+    4
+   ],
+   "oculto": true
+  },
+  "routal": {
+   "forma": "navegador",
+   "zm": 3.2
+  },
+  "junipero-vc": {
+   "forma": "movil",
+   "nav": [
+    4,
+    29,
+    90,
+    0
+   ],
+   "ar": 0.8
+  },
+  "eleven-lab": {
+   "forma": "navegador",
+   "nav": [
+    5.5,
+    23,
+    86,
+    0
+   ],
+   "ar": 1.18
+  },
+  "vitalera": {
+   "forma": "movil",
+   "nav": [
+    4,
+    23.5,
+    104,
+    -2.5
+   ],
+   "ar": 1.02
+  },
+  "zrive": {
+   "forma": "escena",
+   "nav": [
+    9,
+    20,
+    118,
+    4
+   ]
+  },
+  "ikon": {
+   "forma": "navegador",
+   "nav": [
+    3.5,
+    25.5,
+    119,
+    -2.5
+   ],
+   "ar": 0.89
+  },
+  "isotrol": {
+   "forma": "escena",
+   "g": 1,
+   "zm": 4.05,
+   "c": [
+    "#ffffff",
+    "#ece9e3",
+    "#dcdcfb"
+   ]
+  },
+  "qalea": {
+   "forma": "movil",
+   "oculto": true
+  },
+  "kalma": {
+   "forma": "escena",
+   "zm": 3.6,
+   "nav": [
+    6,
+    27,
+    118,
+    -2.5
+   ],
+   "c": [
+    "#fffffe",
+    "#c8dbc3",
+    "#fffffe"
+   ]
+  },
+  "kabila": {
+   "forma": "movil",
+   "nav": [
+    6.5,
+    20.5,
+    117,
+    0
+   ],
+   "ar": 1.02
+  },
+  "impact-bridge": {
+   "forma": "escena",
+   "nav": [
+    6,
+    17,
+    118,
+    -2.5
+   ]
+  },
+  "playground-agentico": {
+   "forma": "escena",
+   "nav": [
+    10,
+    23,
+    116,
+    -4
+   ],
+   "t": {
+    "pais": [
+     "Estados Unidos"
+    ],
+    "categoria": [
+     "EdTech",
+     "SaaS",
+     "IA"
+    ],
+    "servicio": [
+     "Diseño web",
+     "Rediseño",
+     "Desarrollo agéntico",
+     "Animación",
+     "Sistema de diseño",
+     "Migración desde Webflow"
+    ],
+    "tec": [
+     "HTML/CSS/JS",
+     "GSAP",
+     "Python",
+     "Vercel",
+     "Claude Code"
+    ]
+   }
+  },
+  "transcend-network": {
+   "forma": "navegador",
+   "nav": [
+    9,
+    20,
+    118,
+    4
+   ],
+   "zm": 3.55
+  },
+  "stemdo": {
+   "forma": "navegador",
+   "nav": [
+    5,
+    17,
+    111,
+    -2.5
+   ],
+   "oculto": true
+  },
+  "wisable": {
+   "forma": "escena",
+   "zm": 3.5
+  },
+  "greet": {
+   "forma": "navegador",
+   "nav": [
+    10,
+    23,
+    116,
+    4
+   ]
+  },
+  "playground-iep": {
+   "forma": "navegador",
+   "nav": [
+    7,
+    19,
+    116,
+    0
+   ],
+   "ar": 0.92
+  },
+  "fiallegas-abogados": {
+   "forma": "movil",
+   "zm": 3.4,
+   "nav": [
+    7,
+    21,
+    132,
+    0
+   ]
+  },
+  "stellar": {
+   "forma": "escena",
+   "nav": [
+    3.5,
+    24,
+    90,
+    0
+   ],
+   "ar": 1.02
+  },
+  "quantus": {
+   "forma": "movil",
+   "nav": [
+    3.5,
+    25,
+    128,
+    0
+   ],
+   "g": 1,
+   "t": {
+    "pais": [],
+    "tec": [
+     "Claude Code",
+     "Vercel",
+     "GSAP + ScrollTrigger",
+     "Lenis"
+    ],
+    "servicio": [
+     "Diseño web",
+     "Desarrollo agéntico",
+     "Animación",
+     "Ilustración"
+    ],
+    "categoria": [
+     "IA y computación cuántica"
+    ]
+   }
+  },
+  "patchbay": {
+   "forma": "escena",
+   "nav": [
+    3.5,
+    25,
+    104,
+    -4.5
+   ],
+   "t": {
+    "pais": [],
+    "tec": [
+     "Claude Code",
+     "Vercel",
+     "React"
+    ],
+    "servicio": [
+     "Diseño web",
+     "Desarrollo agéntico",
+     "Animación"
+    ],
+    "categoria": [
+     "SaaS y APIs"
+    ]
+   },
+   "ar": 0.97
+  }
+ }
+}

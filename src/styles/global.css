@@ -1,0 +1,969 @@
+@import "tailwindcss";
+
+/* ───────────────────────────────────────────────────────────────
+   TOKENS DE SAVVIA · salen de DESIGN.md (guía de Andoni, 21/09/2026).
+   Nada de valores sueltos en componentes.
+
+   ESPACIADO — escala de Tailwind (base 4 px) usada SOLO en los pasos de la guía:
+     1 · 2 · 3 · 4 · 6 · 8 · 12 · 16 · 24 · 32   (+ 14 = 56 px, secciones móviles)
+   = 4 · 8 · 12 · 16 · 24 · 32 · 48 · 64 · 96 · 128 px
+   Cualquier otro paso es un error de revisión.
+   ─────────────────────────────────────────────────────────────── */
+@theme {
+  /* Color: valores exactos. No se añaden colores sin consultarlo. */
+  --color-*: initial;
+  /* RONDA 50 · PALETA 2 (Andoni, 24/09, «quiero hacer pruebas de colores»): base Cacao + Rosa niebla; Nogal, texto secundario sobre claro;
+     CORAL = el acento principal (botones, llamadas a la acción y la savia: sustituye al Naranja #FF681F); COBALTO y CEREZA = portadas de
+     proyectos y bloques editoriales; Un solo acento protagonista por bloque. (Cítrico, probado en la ronda 50 y FUERA: «no me convence».)
+     Sobre coral y cítrico, texto Cacao; sobre cobalto y cereza, Rosa niebla. Fuera: Rosa arcilla e Iris (la paleta anterior, en el backup r49). */
+  --color-cacao: #302018;
+  --color-nogal: #63402f;
+  --color-niebla: #f5f5f7; /* ronda 152 (2.ª): blanco neutro, igual en las cuatro estaciones */
+  --color-coral: #ff616b; /* ronda 62: Grenadine Pink (de la paleta 3: «el nuevo naranja, más suave»; antes #F65340) */
+  --color-salvia: #96bfe6; /* ronda 62: Salvia Blue, el fondo de Servicios (de la paleta 3) */
+  --color-cobalto: #3456d3;
+  --color-cereza: #b52c4c;
+  --color-naranja: var(--color-coral); /* nombre histórico: todo lo que era la savia en Naranja pasa a Coral */
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  /* Tipografía: tres voces */
+  /* RONDA 153 · «volvemos a la tipografía de titulares de antes»: Family 400 (Timeless Text, probada y retirada) */
+  --font-display: var(--font-family-display), Georgia, serif;
+  /* RONDA 39 · a prueba: ABC Areal (lectura e interfaz) y ABC Areal Mono (detalles). Con ?tipo=antes vuelven Manrope y IBM Plex Mono. */
+  /* RONDA 152 · Timeless: Sans para la lectura y la interfaz; Grotesk para los detalles (lo que era mono: rótulos, metadatos, cifras) */
+  --font-sans: var(--font-timeless-sans), system-ui, sans-serif;
+  /* RONDA 152 · Andoni: «no quiero tener una typo mono, no me gusta»: el token mono pasa a ser la de texto (Timeless, cuando lleguen los archivos) */
+  --font-mono: var(--font-timeless-grotesk), var(--font-timeless-sans), system-ui, sans-serif;
+
+  /* Escala tipográfica de la guía, fluida entre 390 y 1200 px */
+  --text-*: initial;
+  --text-h1: clamp(2.75rem, 1.9075rem + 3.457vw, 4.5rem); /* 44 → 72 */
+  --text-h1--line-height: 1.05;
+  --text-h2: clamp(2.125rem, 1.704rem + 1.728vw, 3rem); /* 34 → 48 */
+  --text-h2--line-height: 1.12;
+  --text-h3: clamp(1.625rem, 1.444rem + 0.741vw, 2rem); /* 26 → 32 */
+  --text-h3--line-height: 1.18;
+  --text-lead: 1.25rem; /* 20 · RONDA 19: «el del hero a 20px» (antes 20 → 22 fluido) */
+  --text-lead--line-height: 1.5;
+  --text-lead--font-weight: 300; /* RONDA 152 (2.ª) · «el subtítulo tiene un peso demasiado alto, menos gordo»: Timeless Sans Light */
+  --text-sub: 1.125rem; /* 18 · RONDA 19: «los subtítulos después del hero van a 18px» */
+  --text-sub--line-height: 1.55;
+  --text-sub--font-weight: 300;
+  --text-body: clamp(1.0625rem, 1.0324rem + 0.1235vw, 1.125rem); /* 17 → 18 */
+  --text-body--line-height: 1.6;
+  --text-aux: 0.875rem; /* 14 */
+  --text-aux--line-height: 1.5;
+  --text-ui: 1rem; /* 16 · botones y navegación */
+  --text-ui--line-height: 1.25;
+  --text-detail: 0.8125rem; /* 13 · dentro del 12–14 de la guía */
+  --text-detail--line-height: 1.4;
+
+  --radius-*: initial;
+  --radius-lg: 0.5rem; /* 8 px: el único radio de partida */
+  --radius-full: 9999px;
+
+  /* Ritmo de página */
+  /* Ronda 9 («hay que dar más aire a cada sección»): de 56→128 a 80→192. AMPLÍA la guía (su tope era 128) por decisión de Andoni. */
+  --space-section: clamp(5rem, 1.63rem + 13.83vw, 12rem); /* 80 → 192 */
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ───────────────────────────────────────────────────────────────
+   SUPERFICIES. La web es OSCURA (Cacao) con detalles en claro.
+   Los componentes no nombran colores de texto: usan fg / fg2 / rule / link,
+   y cada superficie decide qué valen. Cambiar una sección de tono = cambiar una clase.
+     surface-dark  · noche de la estación · texto Rosa niebla, secundario Rosa niebla al 60 %
+     surface-light · Rosa niebla          · texto Cacao, secundario Nogal
+     surface-warm  · COBALTO (ronda 50: el bloque editorial; antes Rosa arcilla) · texto Rosa niebla (4,68:1), secundario niebla al 72 %
+   La IA ya no tiene color propio (Iris sale de la paleta 2): su píxel va en Cobalto (clase .ia).
+   ─────────────────────────────────────────────────────────────── */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-fg: var(--fg);
+  --color-fg2: var(--fg2);
+  --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-strong);
+  --color-hole: var(--hole);
+  --color-mark: var(--mark);
+}
+
+/* LA ESTACIÓN DE LA WEB. RONDA 39: el fondo oscuro cambia con la estación. RONDA 40: paleta de Andoni («Savvia — Colores por estación»):
+   solo cambian el FONDO OSCURO (hero, dolores, proyectos destacados y pie) y el COLOR DEL ÁRBOL (en la ilustración valen variaciones de ese tono
+   para luces, sombras y texturas). El Naranja sigue siendo el acento todo el año: el color del árbol no lo sustituye en botones ni activos.
+     primavera (mar–may) · Cacao rosado #382A2D · Rosa flor #C76B83
+     verano (jun–ago)    · Bosque oscuro #1F352A · Verde hoja #67834D
+     otoño (sep–nov)     · Cacao tostado #3B231B · Cobre naranja #C65C2D
+     invierno (dic–feb)  · Cacao ceniza #2A2932  · Azul grisáceo #6E7B91
+   Contraste medido (Rosa niebla · secundario al 60 % · Rosa arcilla · Naranja): primavera 10,41 · 4,78 · 6,98 · 4,72 — verano 9,99 · 4,65 · 6,70 ·
+   4,53 — otoño 11,09 · 4,98 · 7,44 · 5,03 — invierno 10,94 · 4,95 · 7,34 · 4,96. Cacao (#302018) sigue siendo el texto sobre lo claro.
+   La estación la fija el <head> (la de hoy) y la cambian el icono de la barra, el árbol del hero y Proyectos: html[data-estacion]. */
+@property --noche { syntax: '<color>'; inherits: true; initial-value: #3b231b; }
+@property --arbol { syntax: '<color>'; inherits: true; initial-value: #c65c2d; }
+/* RONDA 132 · Andoni: «el invierno me gustaría que se viera en versión clara, ya que sería como la nieve y el árbol sin hojas».
+   En invierno la «noche» deja de ser oscura: las secciones oscuras pasan a NIEVE (#ECEFF3, un blanco frío, con el grano de siempre) y tinta Cacao.
+     --noche       · el fondo de las secciones oscuras (en invierno, la nieve)
+     --noche-honda · el oscuro de la estación SIEMPRE (velos y cristales sobre la foto de Proyectos, el velo del menú): en invierno, Cacao ceniza
+     --tinta       · la tinta sobre la noche: Rosa niebla; en invierno, Cacao
+     --tinta-inv   · su contrario: Cacao; en invierno, la nieve
+     --k2          · el secundario (60 % de la tinta; sobre la nieve, 70 %: Cacao al 60 % daba 4,2:1)
+   Todo registrado: el fondo se funde en 2,4 s (como siempre) en los dos sentidos. Contraste en invierno: Cacao/nieve 13,5 · secundario 5,4 · Nogal 7,9. */
+@property --noche-honda { syntax: '<color>'; inherits: true; initial-value: #3b231b; }
+@property --tinta { syntax: '<color>'; inherits: true; initial-value: #f5f5f7; }
+@property --tinta-inv { syntax: '<color>'; inherits: true; initial-value: #302018; }
+@property --k2 { syntax: '<percentage>'; inherits: true; initial-value: 60%; }
+/* RONDA 232 · «al cambiar de estación, todo fluido como el hero»: los colores de marca que cambian con la estación (coral, cacao, el bloque de Servicios)
+   y la tierra de las raíces no estaban registrados y SALTABAN de golpe mientras el fondo se fundía en 2,4 s. Registrados, viajan con él. */
+@property --color-coral { syntax: '<color>'; inherits: true; initial-value: #ff616b; }
+@property --color-cacao { syntax: '<color>'; inherits: true; initial-value: #3b231b; }
+@property --color-salvia { syntax: '<color>'; inherits: true; initial-value: #ecbf8f; }
+@property --tierra-k { syntax: '<percentage>'; inherits: true; initial-value: 30%; }
+:root {
+  --noche: #3b231b;
+  --noche-honda: #3b231b;
+  --arbol: #c65c2d;
+  --tinta: #f5f5f7;
+  --tinta-inv: #302018;
+  --k2: 60%;
+  /* RONDA 181 · Eric: «bajo el hero, el fondo algo más oscuro, como si fuese tierra que rodea a las raíces»: la noche de la estación hundida
+     (en srgb, para que el motor de las raíces la pueda calcular igual: NOCHE × (1 − k)). En invierno, tierra helada: apenas más honda que la nieve. */
+  --tierra-k: 30%;
+  --tierra: color-mix(in srgb, var(--noche), #000 var(--tierra-k));
+  /* la mancha de tierra: una elipse centrada en la línea de suelo (Raices.astro), que sigue en los Dolores con el mismo centro */
+  --raices-h: calc(var(--roble-w) * 361 / 1260);
+  --tierra-mancha: calc(var(--roble-w) * 0.62) calc(var(--raices-h) * 1.75);
+  --tierra-paradas: var(--tierra), color-mix(in srgb, var(--tierra), var(--noche) 55%) 55%, transparent;
+  /* la tinta cambia en un golpe corto cuando el fondo va por la mitad de su fundido (curva muy en S, a 0,72 s): así nunca hay un tramo con texto y fondo del mismo gris */
+  transition: --noche 2.4s ease, --noche-honda 2.4s ease, --arbol 2.4s ease, --tinta 1.2s cubic-bezier(0.9, 0, 0.1, 1) 0.12s, --tinta-inv 1.2s cubic-bezier(0.9, 0, 0.1, 1) 0.12s, --k2 2.4s ease, --color-coral 2.4s ease, --color-cacao 2.4s ease, --color-salvia 2.4s ease, --tierra-k 2.4s ease;
+}
+/* RONDA 152 · Andoni: «pulir los colores de cada estación para que cada una te transmita su esencia; que cada estación tenga colores propios, todos y
+   cada uno de ellos». Las once tintas de la web son de la estación (ninguna común), sacadas de lo que se ve fuera ese trimestre:
+     primavera · ciruela de anochecer, flor de cerezo, pétalo, corteza de cerezo, cielo de abril, lila de glicinia, cereza
+     verano    · bosque de noche, hoja al sol, lima, sombra de hoja (sin crema: DESIGN.md), madera seca, mar de agosto, azul de mar hondo, sandía
+     otoño     · la casa: Cacao tostado, cobre, Coral, hoja seca clara, castaño, cielo de noviembre, ámbar, granada
+     invierno  · nieve, pizarra, roble desnudo, azul glaciar, hielo, corteza fría, cielo de enero, azul de pizarra, acebo
+   RONDA 152 (2.ª) · Andoni: «las partes claras, siempre iguales entre estaciones: un claro cercano al blanco sin nada de crema» → papel #F5F5F7 (blanco
+   neutro) en las cuatro; «el azul de Servicios no me convence: una paleta para cada estación más temática» → el cielo (fondo de Servicios) es pétalo de
+   cerezo (primavera) · prado al sol (verano) · hoja seca (otoño) · hielo (invierno).
+   Medido (WCAG): tinta/noche 11,0–11,8 · secundario 4,8–5,2 · cacao/papel 11,8–13,2 · madera/papel 6,7–7,4 · cacao/cielo 7,8–10,3. */
+/* RONDA 153 · Andoni: «en el brandbook los colores de cada estación: algunos repetidos, algunos con nombres que no corresponden; menos colores por estación,
+   simplificar». Cada estación tiene sus colores propios, con su nombre: el fondo · el roble · la savia (acento) · el bloque claro (Servicios); la tinta
+   (texto sobre lo claro) es el propio fondo, salvo en invierno (el fondo es nieve: tinta Pizarra). El blanco de lo claro es común (#F5F5F7). Lo demás se DERIVA de esos cinco (ya no son colores sueltos): el cristal = el fondo
+   (en invierno, la tinta) · la madera = tinta + roble · el detalle = savia + tinta · el fruto = savia + tinta, más hondo. */
+html[data-estacion='primavera'] { --noche: #3a2932; --noche-honda: #3a2932; --arbol: #d98aa5; --tinta: #f5f5f7; --tinta-inv: #3a2932; --color-coral: #ff8fb8; --color-niebla: #f5f5f7; --color-cacao: #3a2932; --color-salvia: #f4c7d5; }
+html[data-estacion='verano'] { --noche: #1b3125; --noche-honda: #1b3125; --arbol: #6f9a4e; --tinta: #f5f5f7; --tinta-inv: #1b3125; --color-coral: #b9e26c; --color-niebla: #f5f5f7; --color-cacao: #1b3125; --color-salvia: #cfe6a4; }
+html[data-estacion='otono'] { --noche: #3b231b; --noche-honda: #3b231b; --arbol: #c65c2d; --tinta: #f5f5f7; --tinta-inv: #3b231b; --color-coral: #ff616b; --color-niebla: #f5f5f7; --color-cacao: #3b231b; --color-salvia: #ecbf8f; }
+html[data-estacion='invierno'] { --tierra-k: 7%; --noche: #f5f5f7; --noche-honda: #22303e; --arbol: #7d8ba3; --tinta: #22303e; --tinta-inv: #f5f5f7; --k2: 70%; --color-coral: #4f8ad6; --color-niebla: #f5f5f7; --color-cacao: #22303e; --color-salvia: #cadcee; }
+/* 28/10 · LA SAVIA COMO TEXTO SOBRE LO CLARO. Andoni: «cerciorarnos del contraste en verano y primavera, en todo». La savia de cada estación es un acento:
+   como texto pequeño sobre el blanco no se lee (verano, lima: 1,36:1; primavera, cereza: 1,95; otoño 2,69; invierno 3,25). Para cifras y rótulos en savia sobre
+   lo claro, --savia-texto: la savia mezclada con la tinta lo justo para pasar de 4,5:1 (medido: otoño 5,1 · invierno 5,6 · primavera 4,9 · verano 5,0). */
+:root { --savia-k: 60%; --savia-texto: color-mix(in oklab, var(--color-coral) var(--savia-k), var(--color-cacao)); }
+html[data-estacion='primavera'] { --savia-k: 48%; }
+html[data-estacion='verano'] { --savia-k: 40%; }
+/* PRUEBA bloque-azul (Eric, 12/10) · Servicios en azul, por parámetro (Base.astro): ?bloque=hielo = el Hielo de invierno en las cuatro estaciones;
+   ?bloque=cielo = un cielo propio de cada estación (abril claro · mar de agosto · noviembre gris · enero hielo). El color vive solo en #servicios (la
+   superficie lee --color-salvia ahí; las caras de las FAQ y el brandbook no cambian). Medido (WCAG, tinta de la estación sobre el azul): hielo 9,6–10,4;
+   cielo 9,6–10,4. Por acordar con Andoni (ronda 152: «el azul de Servicios no me convence: una paleta temática por estación»). Para quitarla: buscar «PRUEBA bloque-azul». */
+html[data-bloque='hielo'] #servicios { --color-salvia: #cadcee; }
+html[data-bloque='cielo'][data-estacion='primavera'] #servicios { --color-salvia: #d4e3f2; }
+html[data-bloque='cielo'][data-estacion='verano'] #servicios { --color-salvia: #c2ddee; }
+html[data-bloque='cielo'][data-estacion='otono'] #servicios { --color-salvia: #ccd8e3; }
+html[data-bloque='cielo'][data-estacion='invierno'] #servicios { --color-salvia: #cadcee; }
+/* ronda 230 (Eric: «parece que puedo hacer scroll horizontal»): nada que sobresalga (flora, láminas, píldoras) abre scroll lateral; clip no crea contenedor de scroll (el sticky sigue) */
+html,
+body { overflow-x: clip; }
+html[data-estacion] {
+  --color-nogal: color-mix(in oklab, var(--color-cacao) 70%, var(--arbol));
+  --color-cobalto: color-mix(in oklab, var(--color-coral) 62%, var(--color-cacao));
+  --color-cereza: color-mix(in oklab, var(--color-coral) 48%, var(--color-cacao));
+}
+/* las partes oscuras de la home invierten sus dos tintas: lo que era Rosa niebla (texto, trazos, puntos) pasa a --tinta y lo que era Cacao (texto de
+   los botones claros, iconos sobre niebla) a --tinta-inv. Fuera del invierno no cambia nada (niebla = niebla, cacao = cacao). Proyectos no entra:
+   su interfaz va sobre la foto de la mesa y sigue en claro sobre --noche-honda. */
+.hero,
+.cargador,
+.surface-dark:not(#proyectos) {
+  --color-niebla: var(--tinta);
+  --color-cacao: var(--tinta-inv);
+}
+@media (prefers-reduced-motion: reduce) {
+  :root { transition: none; }
+}
+
+@layer base {
+  :root,
+  .surface-dark {
+    --bg: var(--noche);
+    --fg: var(--tinta); /* ronda 132: Rosa niebla; en invierno, Cacao sobre la nieve */
+    /* RONDA 11: «todos los subtítulos van en regular y con un 60 % de opacidad respecto al color principal claro» (5,4:1 sobre Cacao) */
+    --fg2: color-mix(in oklab, var(--tinta) var(--k2), transparent);
+    --rule: color-mix(in oklab, var(--tinta) 18%, transparent);
+    --rule-strong: color-mix(in oklab, var(--tinta) 55%, transparent);
+    --hole: color-mix(in oklab, var(--tinta) 9%, transparent); /* huecos de imagen pendientes */
+    --link: var(--tinta);
+    --mark: var(--color-coral); /* indicadores pequeños (ronda 50: Coral; el Cítrico se probó y cayó) */
+    --btn-filo: color-mix(in oklab, var(--tinta) 34%, transparent); /* RONDA 137 · el filo del CTA Cacao sobre lo oscuro */
+    /* RONDA 138 · Andoni: «los CTAs sobre fondo oscuro se tienen que adaptar a las estaciones». Sobre la noche, el CTA toma el COLOR DE LA
+       ESTACIÓN (--arbol, el acento de la tabla de arriba) hundido: reposo = árbol + 40 % de negro, al pasar = árbol + 24 % (más claro).
+       Texto Rosa niebla: otoño 8,6 → 5,9 · primavera 7,8 → 5,1 · verano 8,7 → 6,0 :1. --arbol está registrado y se funde 2,4 s: el CTA vira
+       con la estación. En invierno (la noche es nieve) vuelve a Cacao → Nogal, como sobre lo claro (regla fuera de la capa, al final). */
+    --btn-fondo: color-mix(in oklab, var(--arbol), #000 40%);
+    --btn-bano: color-mix(in oklab, var(--arbol), #000 24%);
+  }
+  .surface-light {
+    --bg: var(--color-niebla);
+    --fg: var(--color-cacao);
+    --fg2: var(--color-nogal);
+    --rule: color-mix(in oklab, var(--color-cacao) 15%, transparent);
+    --rule-strong: var(--color-cacao);
+    --hole: color-mix(in oklab, var(--color-cacao) 10%, transparent);
+    --link: var(--color-cacao);
+    --mark: var(--color-cacao);
+    --btn-filo: transparent;
+    --btn-fondo: #302018;
+    --btn-bano: #63402f;
+  }
+  /* RONDA 62 · «para la parte de servicios, el azul clarito de la nueva»: surface-warm = SALVIA BLUE con texto Cacao (7,1:1) */
+  .surface-warm {
+    --bg: var(--color-salvia);
+    --fg: var(--color-cacao);
+    --fg2: color-mix(in oklab, var(--color-cacao) 78%, var(--color-salvia));
+    --rule: color-mix(in oklab, var(--color-cacao) 18%, transparent);
+    --rule-strong: var(--color-cacao);
+    --hole: color-mix(in oklab, var(--color-cacao) 10%, transparent);
+    --link: var(--color-cacao);
+    --mark: var(--color-cacao);
+    --btn-filo: transparent;
+    --btn-fondo: #302018;
+    --btn-bano: #63402f;
+  }
+  .surface-dark,
+  .surface-light,
+  .surface-warm {
+    background: var(--bg);
+    color: var(--fg);
+  }
+  /* 30/10 · Eric (iPhone, /proyectos y /manifiesto): «en páginas secundarias no tiene que haber bandas extra sobre el buscador». Safari 26 tiñe sus barras
+     con el fondo del html/body: en las páginas CLARAS el html seguía en la noche de la estación y la barra de abajo salía en Cacao, una banda enorme sobre
+     lo claro. El html toma el color de la página (su <main>). */
+  html:has(> body > main.surface-light) { background-color: var(--color-niebla); }
+  html:has(> body > main.surface-warm) { background-color: var(--color-salvia); }
+  /* RONDA 11 · TEXTURA de fondo, muy sutil: un grano fino (motas con alfa ≤ 12 %) repetido sobre el color plano de cada superficie.
+     Sin mix-blend-mode ni capa fija encima de la página: es un fondo normal, no cuesta nada al hacer scroll. */
+  html,
+  .surface-dark,
+  .surface-light,
+  .surface-warm {
+    background-image: none; /* RONDA 152 · «quitar la textura de los fondos para que no compita con el contenido» */
+  }
+}
+
+/* Contenedor: 1200 px de contenido (ronda 159: hasta 1440 en pantallas grandes, --contenido) + márgenes 20 / 32 / 48. */
+@utility wrap {
+  --gutter: calc(var(--spacing) * 5);
+  width: 100%;
+  max-width: calc(var(--contenido) + var(--gutter) * 2);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+  @media (width >= 48rem) {
+    --gutter: calc(var(--spacing) * 8);
+  }
+  @media (width >= 64rem) {
+    --gutter: calc(var(--spacing) * 12);
+  }
+}
+
+@utility section-y {
+  padding-block: var(--space-section);
+}
+
+/* Retícula: 12 columnas en escritorio (≥ lg), 4 en móvil. Medianil 24 / 16. */
+@utility grid-12 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  column-gap: calc(var(--spacing) * 4);
+  @media (width >= 64rem) {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: calc(var(--spacing) * 6);
+  }
+}
+
+/* Medida de lectura: 60–68 caracteres. */
+@utility measure {
+  max-width: 64ch;
+}
+
+/* SEPARACIÓN ORGÁNICA entre secciones del mismo color (ronda 13 · «quita las ramas que has puesto como separación, prefiero una
+   separación más orgánica vía animación»). No hay nada dibujado entre secciones: la sección que llega BROTA desde el centro de su borde
+   superior, como una mancha de savia que se extiende (máscara elíptica de borde blando atada al scroll: `animation-timeline: view()`).
+   La máscara pone su centro en el borde de arriba (la posición y compensa el tamaño). Sin soporte, sin JS o con movimiento reducido:
+   la sección está entera desde el principio. Marca: [data-brota]. */
+@supports (animation-timeline: view()) {
+  html.anima [data-brota] {
+    mask-image: radial-gradient(closest-side, #000 58%, transparent);
+    mask-repeat: no-repeat;
+    --tl: view();
+    animation: brotar linear both;
+    animation-timeline: var(--tl); /* por variable: si no, el minificador lo funde en el atajo `animation` y Chrome lo descarta entero */
+    animation-range: entry 0% cover 42%;
+  }
+  @keyframes brotar {
+    from { mask-size: 40% 24%; mask-position: 50% -15.8%; }
+    to { mask-size: 420% 520%; mask-position: 50% 61.9%; }
+  }
+}
+
+/* Colores interpolables (Otros trabajos: el degradado de la pieza de logotipos vira de un proyecto a otro) */
+@property --rev { syntax: '<percentage>'; inherits: false; initial-value: -30%; } /* ronda 81: la aparición del «Contáctanos» */
+@property --brillo { syntax: '<number>'; inherits: true; initial-value: 0; } /* ronda 79: la luz del «Contáctanos» */
+@property --c1 { syntax: '<color>'; inherits: true; initial-value: #302018; }
+@property --c2 { syntax: '<color>'; inherits: true; initial-value: #63402f; }
+@property --c3 { syntax: '<color>'; inherits: true; initial-value: #eadde7; }
+
+/* LA CARGA (ronda 16, Cargador.astro): mientras dura, el hero espera 100 lvh más abajo (la cámara baja hasta él) y la barra y los
+   carriles no están; aparecen al posarse. El JS de la carga mueve el hero con `transform` en línea y al acabar lo quita. */
+html.cargando [data-hero] {
+  transform: translate3d(0, 100lvh, 0);
+}
+html.cargando {
+  overflow: hidden;
+}
+[data-nav] {
+  transition: opacity 0.8s ease, color 0.3s ease; /* ronda 141: el relevo claro/oscuro de la barra, suave */
+}
+html.cargando [data-nav],
+html.cargando .carriles,
+html.cargando .marcas,
+html.estudio-sentado .carriles,
+html.estudio-sentado .marcas {
+  opacity: 0; /* sentado delante del ordenador no hay retícula encima de la escena */
+}
+
+/* RONDA 159 · Eric: «el max-width aumentarlo un poco más con un tope claro»: el ancho del contenido (sin márgenes) es 1200 px hasta una
+   ventana de 1920 (ronda 159, 2.ª: «cuidado», en un portátil de 1710 ya cambiaba) y crece con ella hasta un TOPE de 1440 px (90 rem), al que llega con 2400. Lo usan `wrap`, los carriles y el marco del hero. */
+:root {
+  --contenido: clamp(75rem, 75rem + (100vw - 120rem) * 0.5, 90rem);
+}
+
+/* RONDA 159 · PANTALLAS GIGANTES (a prueba): por encima de 2560 px de ancho la web entera crece en proporción, como un zoom: el rem
+   del documento sigue al ancho (0,625 vw = 16 px a 2560), con TOPE ×2 (200 %, 5120 px). Por debajo de 2560, nada cambia. El suelo es el
+   100 % del visitante: si tiene la letra más grande, manda la suya. Las media queries no se ven afectadas (miden con el rem inicial). */
+html {
+  font-size: clamp(100%, 0.625vw, 200%);
+  /* sin rebote más allá de la web (arriba del hero, abajo del pie); también quita el «tirar para recargar» del móvil */
+  overscroll-behavior-y: none;
+}
+
+/* EL ROBLE (hero + raíces) · RONDA 13: la ACUARELA de Andoni (`tools/recorte-hero.py` → hero-arbol.webp 1260×583 + hero-raices.webp
+   1260×361, partidas por la línea de suelo y centradas en el tronco). Un solo ANCHO para las dos mitades; el alto del árbol es lo que
+   queda de pantalla tras el titular (así la línea de suelo cae siempre dentro del primer pantallazo). En móvil puede pasarse del ancho:
+   lo que se corta son estelas. */
+:root {
+  /* RONDA 14 · «el árbol tiene que ser más pequeño»: ~70 % del de la ronda 13 */
+  --roble-h: clamp(8rem, 100svh - 29rem, 12.5rem); /* svh: con la barra de Safari el árbol no se corta */
+  --roble-w: min(calc(var(--roble-h) * 2.1612), 116vw);
+}
+@media (width >= 48rem) {
+  :root {
+    /* ronda 16: «un poco más grande»; ronda 53 −5 rem (H1 de 3 líneas); ronda 65: H1 corto, vuelve.
+       RONDA 159 · Eric: «en pantallas más grandes el árbol tiene que ocupar más»: el tope (30 rem) crece por encima de 1920 px hasta 38 rem (608 px de
+       alto, 1314 de ancho); por debajo de 1920 no cambia (idéntico a la ronda 158). Las raíces comparten --roble-w: crecen con él. Nunca más ancho que el contenido. */
+    --roble-h: clamp(12rem, 100lvh - 26.5rem, clamp(30rem, 30rem + (100vw - 120rem) * 0.4, 38rem));
+    --roble-w: min(calc(var(--roble-h) * 2.1612), 84vw, var(--contenido));
+  }
+}
+
+/* comparar con la pareja anterior: ?tipo=antes (la clase la pone el <head>) */
+html.tipo-antes {
+  --font-sans: var(--font-manrope), system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+}
+
+@layer base {
+  html {
+    background-color: var(--bg); /* RONDA 19: solo el color; el atajo `background` borraba el GRANO de la ronda 11 en toda sección sin superficie (era el «corte» al salir de Proyectos) */
+    color: var(--fg);
+    color-scheme: dark;
+    font-family: var(--font-sans);
+  }
+  html[data-estacion='invierno'] {
+    color-scheme: light; /* ronda 132: la nieve */
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    /* 29/10 · Eric (iPhone): las barras de Safari se quedaban en el salvia de Servicios. Safari 26 tiñe con el background-color del <body> cuando no hay
+       nada fijo en el borde; transparente, se quedaba con el último color que vio. El mismo del html (lo sigue también cuando una página lo cambia). */
+    background-color: inherit;
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    min-height: 100dvh;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    text-wrap: balance;
+  }
+  h1 {
+    letter-spacing: -0.02em;
+  }
+  h2 {
+    letter-spacing: -0.015em;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  /* Regla de la casa: sin cursivas; el énfasis va por tono o peso. */
+  em,
+  i,
+  cite,
+  address {
+    font-style: normal;
+  }
+  :focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+  ::selection {
+    background: var(--color-naranja);
+    color: var(--color-cacao);
+  }
+}
+
+@layer components {
+  /* Detalles y metadatos · Timeless Grotesk Light (ronda 152) */
+  .detail {
+    font-family: var(--font-mono);
+    font-weight: 300;
+    font-size: var(--text-detail);
+    line-height: var(--text-detail--line-height);
+    font-variant-numeric: tabular-nums;
+  }
+  .detail-caps {
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  /* RONDA 134 · Andoni: «CTAs de este estilo, aplica a todo» (referencia: píldora llena, MAYÚSCULAS espaciadas, flecha fina y larga).
+     Un solo sistema para toda la web (marcado: src/components/Cta.astro):
+       .btn-primary   · píldora LLENA de Coral, texto Cacao (literal: en invierno no se invierte), sin borde, sombra ni cristal.
+       .btn-secondary · sin caja: el texto y la flecha en la tinta de su sitio (currentColor); al pasar, el texto se enciende (RONDA 136: sin subrayado).
+       .btn-sm        · el paso pequeño de los dos.
+       .btn-flecha    · la flecha de la casa (src/lib/flecha.ts, RONDA 136: una «→» fina). Al pasar, un empujón de 2,5 px.
+     Lo que reemplaza: el cristal con la GOTA de las rondas 66–76 (src/scripts/cta.ts, retirado).
+     Una sola acción principal por sección; el resto, secundarias. Los enlaces dentro de un párrafo siguen siendo .link. */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: calc(var(--spacing) * 3);
+    min-height: calc(var(--spacing) * 12);
+    padding-inline: calc(var(--spacing) * 6);
+    border-radius: var(--radius-lg);
+    border: 1px solid transparent;
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: var(--text-ui);
+    line-height: var(--text-ui--line-height);
+    transition:
+      background-color 0.25s var(--ease-out-expo),
+      color 0.25s var(--ease-out-expo);
+  }
+  /* RONDA 144 · Andoni: «los CTAs, todos con el mismo formato que la barra de cambiar de proyecto de la vista sentado: esa barra como cristal, todos
+     ese estilo; y las flechas como las de ahí, en todos lados». Un solo sistema (Cta.astro):
+       .btn-primary   · píldora de CRISTAL (velo de la noche al 58 % + desenfoque + filo claro + sombra), texto Rosa niebla en Manrope 500, sin
+                        mayúsculas; al pasar, la niebla la llena como un líquido desde donde entra el cursor (cta-liquido.ts) y el texto pasa a Cacao
+                        (lo mismo que hacen los botones ‹ › de la barra).
+       .btn-secondary · sin caja: texto + chevrón en la tinta de su sitio; al pasar se enciende.
+       .btn-flecha    · el chevrón «›» (src/lib/flecha.ts), trazo 1,6, puntas redondas.
+       .barra-cristal · la barra entera (‹ 01/04 Nombre ›) para sliders, paginación y testimonios: .paso (círculo) + .cual (cuenta y nombre). */
+  .btn-primary,
+  .btn-secondary {
+    --btn-ease: cubic-bezier(0.25, 1, 0.5, 1); /* ease-out quart */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5em;
+    border: 0;
+    font-family: var(--font-sans);
+    font-weight: 500;
+    font-size: var(--text-ui);
+    line-height: 1;
+    letter-spacing: 0;
+    text-transform: none;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-primary {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    min-height: calc(var(--spacing) * 12); /* 48 */
+    padding-inline: calc(var(--spacing) * 5) calc(var(--spacing) * 4);
+    border-radius: var(--radius-full);
+    background: color-mix(in oklab, var(--noche-honda, #302018) 58%, transparent);
+    -webkit-backdrop-filter: blur(22px) saturate(1.5);
+    backdrop-filter: blur(22px) saturate(1.5);
+    box-shadow:
+      inset 0 0 0 1px color-mix(in oklab, #eadde7 16%, transparent),
+      0 12px 32px -12px rgb(0 0 0 / 0.4);
+    color: #eadde7;
+    transition: color 0.45s var(--btn-ease), box-shadow 0.45s var(--btn-ease);
+  }
+  /* 28/10 · en invierno la «noche» es la nieve: todo lo que no tiene su superficie también es claro (el 404, por ejemplo), así que el cristal va hondo
+     siempre (al 58 % daba 2,9:1 con el texto claro) */
+  html[data-estacion='invierno'] .btn-primary { background: color-mix(in oklab, var(--noche-honda, #302018) 82%, transparent); }
+  /* sobre lo claro, el mismo cristal algo más hondo (si no, el velo se queda en un marrón lavado) */
+  :is(.surface-light, .surface-warm, .sobre-claro-local) .btn-primary {
+    background: color-mix(in oklab, var(--noche-honda, #302018) 82%, transparent);
+    box-shadow:
+      inset 0 0 0 1px color-mix(in oklab, #eadde7 12%, transparent),
+      0 12px 28px -14px rgb(48 32 24 / 0.45);
+  }
+  /* el LÍQUIDO de la ronda 136, ahora en Rosa niebla (la barra: al pasar, el círculo se llena de niebla y el chevrón pasa a Cacao) */
+  .btn-primary::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    left: var(--gx, 50%);
+    top: var(--gy, 50%);
+    width: var(--gd, 260%);
+    aspect-ratio: 1;
+    border-radius: 47% 53% 44% 56% / 55% 45% 57% 43%;
+    background: #eadde7;
+    transform: translate(-50%, -50%) scale(0) rotate(0deg);
+    transition: transform 0.7s cubic-bezier(0.33, 1, 0.68, 1);
+    pointer-events: none;
+  }
+  .btn-primary:hover::before,
+  .btn-primary:focus-visible::before {
+    transform: translate(-50%, -50%) scale(1) rotate(28deg);
+  }
+  .btn-primary:hover,
+  .btn-primary:focus-visible { color: #302018; }
+  .btn-primary:active { scale: 0.98; }
+  .btn-secondary {
+    min-height: calc(var(--spacing) * 6);
+    padding: 0;
+    background: none;
+    color: inherit;
+    transition: color 0.35s var(--btn-ease);
+  }
+  .btn-secondary .btn-tx {
+    padding-block: 0.25em;
+    opacity: 0.78;
+    transition: opacity 0.45s var(--btn-ease);
+  }
+  .btn-secondary:hover .btn-tx,
+  .btn-secondary:focus-visible .btn-tx {
+    opacity: 1;
+  }
+  .btn-secondary.apagado,
+  .btn-secondary[aria-pressed='false'],
+  .btn-secondary[aria-disabled='true'] {
+    color: color-mix(in oklab, currentColor 42%, transparent);
+  }
+  .btn-sm.btn-primary {
+    min-height: calc(var(--spacing) * 10); /* 40 */
+    padding-inline: calc(var(--spacing) * 4) calc(var(--spacing) * 3);
+    font-size: 0.875rem; /* 14 */
+  }
+  .btn-sm.btn-secondary {
+    font-size: 0.875rem;
+  }
+  /* el CHEVRÓN de la casa: al pasar por el <a>/<button> que lo contiene, se dibuja desde el vértice hacia las alas; al salir se queda */
+  .btn-flecha {
+    flex: none;
+    width: 1em;
+    height: 1em;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    overflow: visible;
+  }
+  .btn-flecha path { vector-effect: non-scaling-stroke; stroke-dasharray: 1 1; stroke-dashoffset: 0; }
+  :is(a, button, label, [data-flecha-anima], .cta-abierto):is(:hover, :focus-visible, .cta-abierto):not(:disabled, [aria-disabled='true']) .btn-flecha .fl-ala {
+    animation: fl-traza 0.52s cubic-bezier(0.3, 1.25, 0.5, 1) calc(var(--fl-retraso, 0s) + 0.08s) both;
+  }
+  @keyframes fl-traza {
+    from { stroke-dashoffset: 1; }
+    to { stroke-dashoffset: 0; }
+  }
+  /* RONDA 153 · LA FLECHA LÍQUIDA: las gotas (src/lib/flecha.ts). En reposo no se ven; al pasar, la del vértice se hincha y se recoge, y las de las alas
+     viajan con la punta del trazo (se pasan un poco y vuelven, como un líquido) y se funden con la punta redonda */
+  .btn-flecha .fl-gota { fill: currentColor; stroke: none; opacity: 0; transform-box: view-box; transform-origin: 10.75px 8px; }
+  :is(a, button, label, [data-flecha-anima], .cta-abierto):is(:hover, :focus-visible, .cta-abierto):not(:disabled, [aria-disabled='true']) .btn-flecha .fl-v {
+    animation: fl-gota-v 0.5s cubic-bezier(0.3, 1.4, 0.5, 1) var(--fl-retraso, 0s) both;
+  }
+  :is(a, button, label, [data-flecha-anima], .cta-abierto):is(:hover, :focus-visible, .cta-abierto):not(:disabled, [aria-disabled='true']) .btn-flecha .fl-a {
+    animation: fl-gota-a 0.6s cubic-bezier(0.3, 1.25, 0.5, 1) calc(var(--fl-retraso, 0s) + 0.08s) both;
+  }
+  :is(a, button, label, [data-flecha-anima], .cta-abierto):is(:hover, :focus-visible, .cta-abierto):not(:disabled, [aria-disabled='true']) .btn-flecha .fl-b {
+    animation: fl-gota-b 0.6s cubic-bezier(0.3, 1.25, 0.5, 1) calc(var(--fl-retraso, 0s) + 0.08s) both;
+  }
+  @keyframes fl-gota-v {
+    0% { opacity: 1; transform: scale(0); }
+    45% { opacity: 1; transform: scale(1.15); }
+    100% { opacity: 0; transform: scale(0.6); }
+  }
+  @keyframes fl-gota-a {
+    0% { opacity: 1; transform: translate(0, 0) scale(0.9); }
+    80% { opacity: 1; transform: translate(-4.5px, -4.5px) scale(0.85); }
+    100% { opacity: 0; transform: translate(-4.5px, -4.5px) scale(0.6); }
+  }
+  @keyframes fl-gota-b {
+    0% { opacity: 1; transform: translate(0, 0) scale(0.9); }
+    80% { opacity: 1; transform: translate(-4.5px, 4.5px) scale(0.85); }
+    100% { opacity: 0; transform: translate(-4.5px, 4.5px) scale(0.6); }
+  }
+  .btn-flecha.izq { transform: scaleX(-1); }
+  .btn-flecha.abajo { transform: rotate(90deg); }
+  .btn-flecha.arriba { transform: rotate(-90deg); }
+  /* 28/10 · Andoni: «estas flechas están ladeadas, tenemos que ponerlas como en el resto de la web»: la de los enlaces externos ya no gira 45°, es el mismo chevrón */
+  .btn-flecha.fuera { transform: none; }
+  /* ── LA BARRA DE CRISTAL (la de la vista sentado, para toda la web): ‹ 01/04 Nombre › */
+  .barra-cristal {
+    display: inline-flex;
+    align-items: center;
+    gap: calc(var(--spacing) * 2);
+    padding: calc(var(--spacing) * 1);
+    border-radius: var(--radius-full);
+    background: color-mix(in oklab, var(--noche-honda, #302018) 58%, transparent);
+    -webkit-backdrop-filter: blur(22px) saturate(1.5);
+    backdrop-filter: blur(22px) saturate(1.5);
+    box-shadow:
+      inset 0 0 0 1px color-mix(in oklab, #eadde7 16%, transparent),
+      0 12px 32px -12px rgb(0 0 0 / 0.4);
+    color: #eadde7;
+    white-space: nowrap;
+  }
+  :is(.surface-light, .surface-warm) .barra-cristal {
+    background: color-mix(in oklab, var(--noche-honda, #302018) 82%, transparent);
+  }
+  .barra-cristal .paso {
+    display: grid;
+    place-items: center;
+    width: calc(var(--spacing) * 10);
+    height: calc(var(--spacing) * 10);
+    border-radius: 50%;
+    color: inherit;
+    cursor: pointer;
+    transition: background-color 0.3s ease, color 0.3s ease, scale 0.3s var(--ease-out-expo), opacity 0.3s ease;
+  }
+  /* 28/10 · Eric: en móvil se quedaba encendido el último paso tocado (:hover pegajoso): el relleno, solo con ratón */
+  @media (hover: hover) {
+    .barra-cristal .paso:hover:not(:disabled) {
+      background: #eadde7;
+      color: #302018;
+    }
+  }
+  .barra-cristal .paso:active:not(:disabled) { scale: 0.94; }
+  .barra-cristal .paso:disabled { opacity: 0.3; cursor: default; }
+  .barra-cristal .paso:focus-visible { outline: 1px solid #eadde7; outline-offset: 2px; }
+  .barra-cristal .paso .btn-flecha { width: 1.25rem; height: 1.25rem; }
+  .barra-cristal .cual {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: calc(var(--spacing) * 3);
+    min-width: calc(var(--spacing) * 20);
+    padding-inline: calc(var(--spacing) * 1);
+    font-size: var(--text-ui);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+  .barra-cristal .cual .n { font-family: var(--font-mono); font-size: var(--text-detail); font-weight: 400; opacity: 0.6; }
+  .btn-primary:focus-visible,
+  .btn-secondary:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 4px;
+  }
+  .btn-primary:focus-visible { outline-color: var(--fg, #302018); }
+  @media (prefers-reduced-motion: reduce) {
+    .btn-primary, .btn-primary::before, .btn-secondary, .btn-secondary .btn-tx { transition: none; }
+    /* sin movimiento: la flecha quieta, y el color cambia sin más (la mancha ya está entera, oculta) */
+    .btn-flecha path { animation: none !important; }
+    .btn-flecha .fl-gota { animation: none !important; opacity: 0; }
+    .btn-primary::before { transform: translate(-50%, -50%) scale(1); opacity: 0; transition: opacity 0.2s; }
+    .btn-primary:hover::before, .btn-primary:focus-visible::before { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  }
+  /* RONDA 76 · .cruces ya solo redondea (lo usan cajas que no son botones) */
+  .cruces { position: relative; border-radius: var(--radius-lg); }
+  /* icono genérico dentro de un botón (24 px, trazo 2) */
+  .btn-ic {
+    width: calc(var(--spacing) * 6);
+    height: calc(var(--spacing) * 6);
+    flex: none;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  /* Enlace de texto: subrayado siempre, en el color del texto de su superficie. */
+  .link {
+    color: var(--link);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+    text-decoration-thickness: 1px;
+  }
+  /* RONDA 136 · el subrayado se queda quieto al pasar (sin engordar): solo el color se aviva un poco */
+  .link { transition: opacity 0.3s ease; }
+  .link:hover {
+    opacity: 0.78;
+  }
+
+  /* 28/10 · BROTA (enlaces del menú y del pie): al pasar, de los cantos de arriba de la palabra brota lo de la estación, con las piezas del 404.
+     Lo dibuja src/scripts/brotar.ts en un lienzo pequeño dentro del propio enlace; aquí solo su caja de referencia. */
+  .brota {
+    position: relative;
+  }
+
+  /* DETALLE DE IA · Iris significa «la IA», en dosis MUY sutiles (Andoni, 21/09): la palabra no cambia de color
+     ni lleva fondo; solo la acompaña un píxel Iris arriba a la derecha. Es decorativo (no lleva información),
+     por eso puede vivir sobre Cacao aunque Iris/Cacao sea 2,49:1. */
+  .ia {
+    position: relative;
+    white-space: nowrap;
+  }
+  /* Sin ancho propio: vive en el hueco que la «A» deja arriba a la derecha, así no separa la palabra
+     de la puntuación que venga detrás. Pensado para «IA»; con otra palabra, revisar. */
+  .ia::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    top: 0.2em;
+    width: 0.12em;
+    height: 0.12em;
+    min-width: 4px;
+    min-height: 4px;
+    background: var(--color-cobalto);
+  }
+
+  /* Marca de dato pendiente: solo para la revisión del esqueleto. */
+  .falta {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: var(--text-detail);
+    line-height: var(--text-detail--line-height);
+    border: 1px dashed currentColor;
+    border-radius: var(--radius-lg);
+    padding: calc(var(--spacing) * 2) calc(var(--spacing) * 3);
+  }
+}
+
+/* ───────────────────────────────────────────────────────────────
+   TRANSICIONES (ronda 9) · ver src/scripts/entradas.ts. Un solo lenguaje: ENTRAR EN FOCO.
+   Los estados ocultos cuelgan de html.anima (la pone el script): sin JS o con movimiento reducido no existen.
+   ─────────────────────────────────────────────────────────────── */
+@layer components {
+  .pal {
+    display: inline-block;
+    overflow: clip;
+    overflow-clip-margin: 0.08em;
+    vertical-align: bottom;
+    padding-bottom: 0.12em; /* descendentes (g, p, q) dentro de la máscara */
+    margin-bottom: -0.12em;
+  }
+  .pal > span {
+    display: inline-block;
+  }
+  html.anima [data-entra] .pal > span {
+    translate: 0 112%;
+  }
+  html.anima [data-entra].visto .pal > span {
+    translate: 0 0;
+    transition: translate 0.9s var(--ease-out-expo);
+    transition-delay: calc(var(--n) * 45ms);
+  }
+  html.anima [data-entra].entero,
+  html.anima [data-enfoca] {
+    opacity: 0;
+    filter: blur(10px);
+  }
+  html.anima [data-entra].entero.visto,
+  html.anima [data-enfoca].visto {
+    opacity: 1;
+    filter: none;
+    transition:
+      opacity 0.9s ease,
+      filter 1.1s var(--ease-out-expo);
+    transition-delay: calc(var(--d, 0) * 90ms);
+  }
+
+  /* CAMBIO DE COLOR ENTRE SECCIONES (ronda 11): la transición LÍQUIDA de la web anterior, que gustaba. La sección que llega asoma
+     como una gota por el centro, se ensancha y lo ocupa todo. Un <path> por frontera, movido por el scroll (src/scripts/entradas.ts).
+     Se marca con [data-sube] en la sección que LLEGA; su color es el --bg de esa sección. Sin JS o con movimiento reducido: borde recto. */
+  [data-sube] {
+    position: relative;
+  }
+  .sube {
+    position: absolute;
+    left: 0;
+    bottom: calc(100% - 1px);
+    width: 100%;
+    height: clamp(90px, 24lvh, 240px);
+    pointer-events: none;
+    z-index: 3;
+    /* el MISMO fondo que la sección que llega: color + grano (ronda 12) */
+    background: var(--bg);
+    clip-path: polygon(0 100%, 100% 100%, 100% 100%, 0 100%);
+  }
+  /* RONDA 171 (Eric, captura): sentado en Proyectos, la gota de la sección siguiente asomaba ENCIMA del monitor (el escenario fijo vive dentro del
+     contexto de apilamiento de su sección y esta gota, que va después en el DOM, le pasa por encima) */
+  html.estudio-sentado .sube { visibility: hidden; }
+  /* RONDA 216 · el ECO de la sección anterior dentro de la gota (entradas.ts): el contenido, alineado por abajo con ella y con el texto claro de la sección que llega.
+     La gota lo recorta con su curva: lo que cubre el marrón se ve en blanco */
+  .sube .sube-eco {
+    position: absolute;
+    left: 0;
+    bottom: 1px;
+    width: 100%;
+    background: transparent !important;
+    pointer-events: none;
+  }
+
+}
+
+/* RONDA 51 · la prueba de la sección 2 (index.astro): solo se ve la dirección elegida con `?s2=` */
+html:not([data-s2='a']) #recorrido,
+html:not([data-s2='a2']) #recorrido-a2,
+html:not([data-s2='b']) #recorrido-b {
+  display: none;
+}
+
+/* RONDA 76 · fuera el titular de Proyectos que se generaba en el agua con ondas (rondas 51–75): Eric, «las líneas que salen ahí no me convencen;
+   con el titular y la transición, perfecto». */
+
+/* ── RONDA 63 · TRANSICIONES ENTRE PÁGINAS: las nativas del navegador ENTRE DOCUMENTOS (@view-transition): cada página sigue cargando entera
+   (sin ClientRouter: ningún script de la home cambia). Chrome 126+ y Safari 18.2+.
+   RONDA 64 · «más notable y más savvia» (src/scripts/transicion.ts): al pulsar, la SAVIA se extiende desde el dedo con canto de papel rasgado y cubre
+   la pantalla (con el logotipo en el centro); la página nueva se abre RASGANDO ese papel desde el centro. Lo que tiene nombre viaja por encima
+   (el vídeo de un proyecto, de su tarjeta a la portada del caso: view-transition-name obra-<slug>). */
+/* RONDA 68 · «más orgánico»: entre páginas ya no hay transición nativa; la hace la savia líquida de transicion.ts (sale como una mancha, llega y se
+   escurre). Las transiciones nativas quedan solo DENTRO de /proyectos (orden, filtros, páginas: html.vt-local). */
+@view-transition {
+  navigation: none;
+}
+::view-transition-group(*) {
+  animation-duration: 0.9s;
+  animation-timing-function: var(--ease-out-expo);
+}
+/* dentro de una misma página (el orden del listado): solo viajan las piezas con nombre; la página no se rasga */
+html.vt-local::view-transition-new(root),
+html.vt-local::view-transition-old(root) {
+  -webkit-mask: none;
+  mask: none;
+  animation: none;
+}
+/* la capa de SAVIA (la pone transicion.ts; la máscara crece desde donde pulsas) */
+/* RONDA 69 · «que la animación entre pantallas no vaya al naranja, que vaya al marrón»: la savia de la transición es Cacao con grano y el logotipo, en claro */
+.vt-savia {
+  /* 30/10 · Eric (iPhone): fija, Safari 26 pintaba con ella una banda bajo el buscador y la dejaba puesta. En el documento, a la altura del scroll (transicion.ts) */
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100lvh;
+  z-index: 2147483000;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  background: var(--color-cacao);
+  -webkit-mask: var(--m, none);
+  mask: var(--m, none);
+}
+.vt-logo {
+  /* ronda 68: el logotipo definitivo (isotipo + savvia) */
+  height: clamp(4.5rem, 2.5rem + 7vw, 9rem);
+  aspect-ratio: 2373 / 707;
+  background: var(--color-niebla);
+  -webkit-mask: url('/savvia-palabra.svg?v=228') center / contain no-repeat;
+  mask: url('/savvia-palabra.svg?v=228') center / contain no-repeat;
+  opacity: 0;
+  scale: 0.92;
+  filter: blur(6px);
+  transition: opacity 0.35s ease, scale 0.6s var(--ease-out-expo), filter 0.4s ease;
+}
+.vt-savia.con-logo .vt-logo {
+  opacity: 1;
+  scale: 1;
+  filter: blur(0);
+}
+/* la página nueva nace cubierta de savia, con el logotipo (transicion.ts la escurre; salvavidas en el <head>) */
+html.vt-llega::after {
+  content: '';
+  position: absolute; /* no fija: ver .vt-savia */
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100lvh;
+  z-index: 2147483000;
+  pointer-events: none;
+  background: var(--color-cacao);
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+  ::view-transition-new(root) {
+    -webkit-mask: none;
+    mask: none;
+  }
+}
+
+/* RONDA 138 · el CTA de la estación: en INVIERNO la noche es nieve (clara) → el CTA vuelve a Cacao → Nogal también en el hero y las secciones
+   oscuras. Y la puerta del «Contáctanos» del pie (Pie.astro › .cta-pastilla, estilo acotado con Nogal literal) se llena con el mismo color de
+   la estación que el CTA al pasar. Fuera de @layer: los estilos acotados de Astro no van en capa y ganarían a cualquier regla en capa. */
+html[data-estacion='invierno'],
+html[data-estacion='invierno'] .surface-dark {
+  --btn-fondo: #22303e; /* la tinta de pizarra del invierno */
+  --btn-bano: color-mix(in oklab, #22303e 70%, #7d8ba3);
+}
+/* RONDA 139 · Andoni: «en otoño el CTA, que sea más oscuro»: el cobre se hunde más (árbol + 58 % de negro; al pasar, + 40 %) */
+html[data-estacion='otono'],
+html[data-estacion='otono'] .surface-dark {
+  --btn-fondo: color-mix(in oklab, var(--arbol), #000 58%);
+  --btn-bano: color-mix(in oklab, var(--arbol), #000 40%);
+}
+
+/* RONDA 266 · el BOTÓN DE PLAY propio (`scripts/jugar.ts`): cuando iOS veta el autoplay (modo de bajo consumo) el vídeo se queda en su póster y este disco
+   lo invita a arrancar; se va solo en cuanto el vídeo se mueve. Eric: «mejor diseño y más minimalista»: un disco liso en la tinta de la ESTACIÓN (`--noche-honda`) con el triángulo en Rosa niebla
+   y un filo de 1 px en el tono claro de la estación (`--color-salvia`); sin cristal ni sombra. */
+.jugar-btn {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border: 0;
+  border-radius: 9999px;
+  background: var(--noche-honda, #302018); /* la tinta de la estación (otoño marrón, primavera ciruela, verano bosque, invierno pizarra) */
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--color-salvia, #f5f5f7) 40%, transparent);
+  color: #f5f5f7;
+  cursor: pointer;
+  pointer-events: auto; /* hay contenedores de vídeo con pointer-events: none (el .cine de savvia agentic) */
+  -webkit-tap-highlight-color: transparent;
+  animation: jugar-entra 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transition: transform 0.2s ease;
+}
+.jugar-btn:active { transform: scale(0.92); }
+.jugar-btn svg { width: 16px; height: 16px; margin-left: 2px; fill: currentColor; }
+@keyframes jugar-entra { from { opacity: 0; scale: 0.9; } to { opacity: 1; scale: 1; } }
+@media (prefers-reduced-motion: reduce) { .jugar-btn { animation: none; } }
+

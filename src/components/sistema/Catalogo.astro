@@ -1,0 +1,209 @@
+---
+// RONDA 180 · Eric: «nuestro sistema tiene que ser tan completo como el de Neety». El CATÁLOGO de secciones (como la librería de Neety:
+// catalog.tsx + capture-library-thumbs.js): cada pieza de la web con su miniatura capturada de la web real, su nombre, su archivo y para qué sirve,
+// agrupadas por página. Las miniaturas las saca `node tools/r180/miniaturas.cjs` (Chrome a 1440 × 900, otoño, movimiento reducido, ?carga=0) →
+// public/media/sistema/catalogo/<id>.webp (1200 × 750, 16:10). Si se añade una pieza: una línea en PIEZAS del script y otra aquí.
+// Lo que dice cada tarjeta sale de leer el componente (sus imports de src/data y sus medios en public/media), no de memoria.
+
+type Pieza = { id: string; nombre: string; archivo: string; que: string; de: string; video?: boolean; fotos?: boolean }; // fotos: una por estación, <id>-<estación>.webp // video: grabado en las cuatro estaciones (tools/r266-motion/grabar.cjs)
+type Grupo = { pagina: string; ruta: string; piezas: Pieza[] };
+
+// 28/10 · Andoni: «revisar todos los componentes y secciones para que concuerden con la web actual». Reescrito contra el código de hoy (Inicio.astro y
+// cada componente); entran el chat, el mentor del portfolio y el visor. Las miniaturas, rehechas con tools/r180/miniaturas.cjs.
+// el vídeo de cada estación: public/media/sistema/catalogo/video/<archivo>-<estación>.mp4 (el pie se grabó como «pie»)
+const VID: Record<string, string> = { 'inicio-pie': 'pie', '404': '404' };
+const ESTS = [['otono', 'Otoño'], ['invierno', 'Invierno'], ['primavera', 'Primavera'], ['verano', 'Verano']] as const;
+const GRUPOS: Grupo[] = [
+  {
+    pagina: 'Inicio',
+    ruta: '/',
+    piezas: [
+      { id: 'inicio-hero', nombre: 'Hero', archivo: 'src/components/Hero.astro', que: 'Arriba, el titular y el subtítulo. Debajo, el roble de la estación, que se dibuja y se pinta desde donde cae la gota. En el marco, la hora y «desde 2020».', de: 'Textos en src/data/home.ts › hero, lámina en public/media/hero/, motor en src/scripts/estela.ts.' },
+      { id: 'inicio-proyectos', nombre: 'Proyectos destacados', archivo: 'src/components/Proyectos.astro', que: 'La mesa del estudio. De pie, el monitor enseña el reel de la estación. Al sentarte, la cámara se acerca y recorres por dentro la web real de cada proyecto. En móvil, su vídeo.', de: 'Proyectos en src/data/home.ts › proyectos.nuevos, láminas en public/media/estudio/, reel en public/media/reel/.' },
+      { id: 'inicio-mas-proyectos', nombre: 'Más proyectos', archivo: 'src/components/Anteriores.astro + Cuadricula.astro', que: 'El mosaico de proyectos, cada uno sobre el degradado de su marca y con su web en marcha al pasar. Cada pieza cambia de escena con un botón y se abre en el visor. Tras los cinco primeros, una fila de citas, logotipos y cifras.', de: 'src/data/home.ts › proyectos.anteriores, celdas y testimonios, src/data/proyectos.ts, vídeos en public/media/anteriores/.' },
+      { id: 'inicio-servicios', nombre: 'Servicios', archivo: 'src/components/Servicios.astro', que: 'Las tres formas de trabajar contigo. Al elegir una, un cursor marca en la tarjeta lo que incluye.', de: 'src/data/home.ts › servicios.' },
+      { id: 'inicio-preguntas', nombre: 'Preguntas', archivo: 'src/components/Preguntas.astro', que: 'Las preguntas frecuentes, como una conversación. Eliges una sugerencia o escribes la tuya, y contestan Eric y Andoni.', de: 'src/data/home.ts › preguntas.' },
+      // 28/10 · Eric: «en foto el estado final de cada estación» (el vídeo cortaba los enlaces): cuatro fotos, la ventana entera
+      { id: 'inicio-pie', fotos: true, nombre: 'Pie', archivo: 'src/components/Pie.astro', que: 'El paisaje de la estación se dibuja tras la gota del logotipo. «Contáctanos» queda entre las montañas y se abre al pasar.', de: 'src/data/home.ts › pie y nav, capas en public/media/pie/. Es el mismo en todas las páginas.' },
+    ],
+  },
+  {
+    pagina: 'Portfolio',
+    ruta: '/proyectos',
+    piezas: [
+      { id: 'portfolio-todos', nombre: 'Todos los proyectos', archivo: 'src/views/Portfolio.astro + obra/PiezaCasa.astro', que: '«Webs a medida.» y, debajo, los filtros por país, tecnología, servicio y categoría, que se quedan arriba al bajar. Después, todos los proyectos, cada uno en su escena, navegador, mesa o móvil.', de: 'src/data/proyectos.ts y src/data/portfolio-orden.json, con el orden, las formas y los ajustes de cada pieza. Los filtros van en la dirección, como ?pais o ?tec.' },
+      { id: 'portfolio-mentor', nombre: 'Mentor', archivo: 'src/components/Voces.astro', que: 'Cada once proyectos, un mentor a todo el ancho. Su retrato al carboncillo se dibuja y la cita sube palabra a palabra. El mismo cierra cada caso de estudio.', de: 'src/data/home.ts › proyectos.testimonios, retratos en public/media/testimonios/.' },
+      { id: 'portfolio-visor', nombre: 'Visor', archivo: 'src/components/obra/Visor.astro', que: 'Al abrir un proyecto, la mesa del estudio en grande con su web en el monitor. Con las flechas pasas al siguiente.', de: 'Lámina de la mesa a 5120 px en public/media/estudio/, vídeo grande de cada proyecto en public/media/obra/.' },
+    ],
+  },
+  {
+    pagina: 'Caso de estudio',
+    ruta: '/proyectos/neety',
+    piezas: [
+      { id: 'caso-cabecera', nombre: 'Cabecera del caso', archivo: 'src/views/Caso.astro', que: 'A la izquierda, una columna fija con el nombre, la entradilla, la ficha, el enlace a la web y, abajo, anterior y siguiente. A la derecha, el caso.', de: 'src/data/proyectos.ts, una ficha por proyecto.' },
+      { id: 'caso-portada', nombre: 'Portada', archivo: 'obra/Pieza.astro (grande)', que: 'La web del proyecto sube desde abajo sobre el degradado de su marca, a todo el ancho.', de: 'Portada de cada ficha en src/data/proyectos.ts, medios en public/media/obra/<slug>/.' },
+      { id: 'caso-sistema', nombre: 'El sistema y lo que entregamos', archivo: 'src/views/Caso.astro', que: 'La paleta con lo que se usa cada color, las tipografías con su escala real y el espaciado medido. Después, lo que se entregó y, en «Por dentro», las herramientas y las cifras.', de: 'src/data/proyectos.ts › paleta y tipos, medidos en la web de cada cliente.' },
+    ],
+  },
+  {
+    pagina: 'Lab',
+    ruta: '/lab',
+    piezas: [
+      { id: 'lab', nombre: 'La mesa del lab', archivo: 'src/components/lab/Mesa.astro', que: 'Un lienzo sin fin que se arrastra, con la tarjeta de savvia lab y raíces hacia cada experimento. Cada uno se abre en grande, con el enlace a su web.', de: 'src/data/lab.ts, con los experimentos y el mundo. Vídeos en public/media/lab/.' },
+    ],
+  },
+  {
+    pagina: 'Manifiesto',
+    ruta: '/manifiesto',
+    piezas: [
+      { id: 'manifiesto-portada', nombre: 'Portada', archivo: 'src/views/Manifiesto.astro', que: '«Manifiesto» y el brote de la bellota de la estación, que se dibuja con el motor del árbol.', de: 'Láminas en public/media/manifiesto/.' },
+    ],
+  },
+  {
+    pagina: '404',
+    ruta: '',
+    piezas: [
+      { id: '404', video: true, nombre: 'El tiempo encima', archivo: 'src/pages/404.astro + 404/Cuatro.astro', que: 'El 404 en grande y, encima, el tiempo de la estación. Hojas, nieve, flores o hierba que se posan.', de: 'Textos en la propia página.' },
+    ],
+  },
+];
+// 28/10 · /en/storybook: lo mismo en inglés, al lado (por página y por id de pieza); los archivos y las rutas no se traducen
+import { langDe } from '../../lib/i18n';
+const lang = langDe(Astro.currentLocale);
+const en = lang === 'en';
+const PAGINA_EN: Record<string, string> = { Inicio: 'Home', Portfolio: 'Portfolio', 'Caso de estudio': 'Case study', Lab: 'Lab', Manifiesto: 'Manifesto', '404': '404' };
+const ESTS_EN: Record<string, string> = { otono: 'Autumn', invierno: 'Winter', primavera: 'Spring', verano: 'Summer' };
+const PIEZA_EN: Record<string, { nombre: string; que: string; de: string }> = {
+  'inicio-hero': { nombre: 'Hero', que: 'At the top, the headline and the subtitle. Below, the oak of the season, drawn and painted from where the drop falls. In the frame, the time and “since 2020”.', de: 'Copy in src/data/home.ts › hero, illustration in public/media/hero/, engine in src/scripts/estela.ts.' },
+  'inicio-proyectos': { nombre: 'Featured projects', que: 'The studio desk. Standing, the monitor shows the reel of the season. Sitting down, the camera moves in and you walk through the real website of each project. On mobile, its video.', de: 'Projects in src/data/home.ts › proyectos.nuevos, illustrations in public/media/estudio/, reel in public/media/reel/.' },
+  'inicio-mas-proyectos': { nombre: 'More projects', que: 'The project mosaic, each one on its brand gradient with its website playing on hover. Each piece switches scene with a button and opens in the viewer. After the first five, a row of quotes, logos and figures.', de: 'src/data/home.ts › proyectos.anteriores, cells and testimonials, src/data/proyectos.ts, videos in public/media/anteriores/.' },
+  'inicio-servicios': { nombre: 'Services', que: 'The three ways of working with you. Pick one and a cursor marks on the card what it includes.', de: 'src/data/home.ts › servicios (list and groups).' },
+  'inicio-preguntas': { nombre: 'Questions', que: 'The FAQ as a conversation. Pick a suggestion or write your own, and Eric and Andoni answer.', de: 'src/data/home.ts › preguntas.' },
+  'inicio-pie': { nombre: 'Footer', que: 'The landscape of the season is drawn after the drop from the logo. “Contact us” sits between the mountains and opens on hover.', de: 'src/data/home.ts › pie and nav, layers in public/media/pie/. It is the same on every page.' },
+  'portfolio-todos': { nombre: 'All projects', que: '“Websites made to measure.” and, below, the filters by country, technology, service and category, which stay at the top as you scroll. Then every project, each in its scene, browser, desk or mobile.', de: 'src/data/proyectos.ts and src/data/portfolio-orden.json (order, forms and settings for each piece); the filters go in the address (?pais, ?tec…).' },
+  'portfolio-mentor': { nombre: 'Mentor', que: 'Every eleven projects, a mentor across the full width. Their charcoal portrait is drawn and the quote rises word by word. The same piece closes each case study.', de: 'src/data/home.ts › proyectos.testimonios, portraits in public/media/testimonios/.' },
+  'portfolio-visor': { nombre: 'Viewer', que: 'Open a project and the studio desk appears large with its website on the monitor. The arrows take you to the next one.', de: 'Desk illustration at 5120 px in public/media/estudio/, large video of each project in public/media/obra/.' },
+  'caso-cabecera': { nombre: 'Case header', que: 'On the left, a fixed column with the name, the lead, the details, the link to the website and, at the bottom, previous and next. On the right, the case.', de: 'src/data/proyectos.ts (one entry per project).' },
+  'caso-portada': { nombre: 'Cover', que: 'The project’s website rises from below over its brand gradient, full width.', de: 'Cover of each entry in src/data/proyectos.ts, media in public/media/obra/<slug>/.' },
+  'caso-sistema': { nombre: 'The system and what we deliver', que: 'The palette with how much each colour is used, the typefaces with their real scale and the measured spacing. Then what was delivered and, under the hood, the tools and the figures.', de: 'src/data/proyectos.ts › paleta and tipos (measured on each client’s website).' },
+  lab: { nombre: 'The lab desk', que: 'An endless canvas you drag, with the savvia lab card and roots leading to each experiment. Each one opens large, with the link to its website.', de: 'src/data/lab.ts (experiments and world), videos in public/media/lab/.' },
+  'manifiesto-portada': { nombre: 'Cover', que: '“Manifesto” and the acorn sprout of the season, drawn with the tree engine.', de: 'Illustrations in public/media/manifiesto/.' },
+  '404': { nombre: 'The weather on top', que: 'The large 404 and, over it, the weather of the season. Leaves, snow, flowers or grass that settle.', de: 'Copy in the page itself.' },
+};
+const L = (p: Pieza) => (en && PIEZA_EN[p.id] ? { ...p, ...PIEZA_EN[p.id] } : p);
+---
+
+<section id="catalogo" class="seccion" aria-labelledby="h-catalogo">
+  <h2 id="h-catalogo" class="font-display text-h2">{en ? <>Section catalogue</> : <>Catálogo de secciones</>}</h2>
+  {en ? <p class="cat-intro">
+    Some of the sections of the website, page by page, as it looks today. Under each one, the file it lives in and where its copy comes from.
+  </p> : <p class="cat-intro">
+    Algunas secciones de la web, página a página, tal como se ven hoy. Debajo de cada una, el archivo donde vive y de dónde sale su texto.
+  </p>}
+
+  {
+    GRUPOS.map((g) => (
+      <div class="cat-grupo">
+        <h3 class="cat-pag">
+          {en ? PAGINA_EN[g.pagina] ?? g.pagina : g.pagina}
+          {/* 29/10 · Eric: fuera la dirección junto al nombre de la página («/», «/proyectos»…) */}
+        </h3>
+        <ul class="cat-rej">
+          {g.piezas.map(L).map((p) => (
+            <li class="cat-tarjeta">
+              {p.fotos ? (
+                <figure class="cat-vid" data-cat-fotos={p.id}>
+                  <img class="cat-mini" src={`/media/sistema/catalogo/${p.id}-otono.webp`} alt={en ? `Screenshot of ${p.nombre}` : `Captura de ${p.nombre}`} width="1200" height="750" loading="lazy" decoding="async" data-cat-v />
+                  <div class="cat-est" role="radiogroup" aria-label={en ? `See ${p.nombre} in` : `Ver ${p.nombre} en`}>
+                    {ESTS.map(([e, n], k) => <button type="button" role="radio" aria-checked={k === 0 ? 'true' : 'false'} data-cat-est={e}>{en ? ESTS_EN[e] : n}</button>)}
+                  </div>
+                </figure>
+              ) : p.video ? (
+                <figure class={`cat-vid${p.id === '404' ? ' abajo' : ''}`} data-cat-vid={VID[p.id]}>
+                  <video class="cat-mini" src={`/media/sistema/catalogo/video/${VID[p.id]}-otono.mp4`} poster={`/media/sistema/catalogo/video/${VID[p.id]}-otono.jpg`} muted loop playsinline preload="none" aria-label={en ? `${p.nombre}, in motion` : `${p.nombre}, en movimiento`} data-cat-v></video>
+                  <div class="cat-est" role="radiogroup" aria-label={en ? `See ${p.nombre} in` : `Ver ${p.nombre} en`}>
+                    {ESTS.map(([e, n], k) => <button type="button" role="radio" aria-checked={k === 0 ? 'true' : 'false'} data-cat-est={e}>{en ? ESTS_EN[e] : n}</button>)}
+                  </div>
+                </figure>
+              ) : (
+                <img class="cat-mini" src={`/media/sistema/catalogo/${p.id}.webp`} alt={en ? `Screenshot of ${p.nombre}` : `Captura de ${p.nombre}`} width="1200" height="750" loading="lazy" decoding="async" />
+              )}
+              <div class="cat-texto">
+                <p class="cat-nombre">{p.nombre}</p>
+                <p class="detail cat-archivo">{p.archivo}</p>
+                <p class="cat-que">{p.que}</p>
+                <p class="cat-de">{p.de}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ))
+  }
+</section>
+
+<script>
+  const ESTS = ['otono', 'invierno', 'primavera', 'verano'];
+  // las piezas en foto por estación: los botones cambian la foto (se piden las cuatro al verse, para que el cambio no parpadee)
+  document.querySelectorAll<HTMLElement>('[data-cat-fotos]').forEach((fig) => {
+    const im = fig.querySelector<HTMLImageElement>('[data-cat-v]')!, base = fig.dataset.catFotos!;
+    new IntersectionObserver(([e], o) => { if (e.isIntersecting) { ESTS.forEach((x) => (new Image().src = `/media/sistema/catalogo/${base}-${x}.webp`)); o.disconnect(); } }).observe(fig);
+    fig.querySelectorAll<HTMLButtonElement>('[data-cat-est]').forEach((b) => b.addEventListener('click', () => {
+      fig.querySelectorAll('[data-cat-est]').forEach((x) => x.setAttribute('aria-checked', String(x === b)));
+      im.src = `/media/sistema/catalogo/${base}-${b.dataset.catEst}.webp`;
+    }));
+  });
+  // 28/10 · el pie y el 404 en movimiento: suenan (mudos) solo a la vista; cuatro botones los pasan por las estaciones sin cambiar la de la página
+  {
+    const quieto = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    document.querySelectorAll<HTMLElement>('[data-cat-vid]').forEach((fig) => {
+      const v = fig.querySelector<HTMLVideoElement>('[data-cat-v]')!, base = fig.dataset.catVid!;
+      let visto = false;
+      new IntersectionObserver(([e]) => { visto = e.isIntersecting; if (visto && !quieto) v.play().catch(() => {}); else v.pause(); }, { rootMargin: '10% 0px' }).observe(fig);
+      fig.querySelectorAll<HTMLButtonElement>('[data-cat-est]').forEach((b) => b.addEventListener('click', () => {
+        const e = b.dataset.catEst!;
+        fig.querySelectorAll('[data-cat-est]').forEach((x) => x.setAttribute('aria-checked', String(x === b)));
+        v.poster = `/media/sistema/catalogo/video/${base}-${e}.jpg`; v.src = `/media/sistema/catalogo/video/${base}-${e}.mp4`;
+        if (visto && !quieto) v.play().catch(() => {});
+      }));
+    });
+  }
+</script>
+
+<style>
+  /* Los valores, los de Libro.astro (sus estilos son de ámbito y no llegan aquí) */
+  .seccion { margin-top: calc(var(--spacing) * 32); scroll-margin-top: calc(var(--spacing) * 20); } /* 28/10 · sin raya, como en Libro.astro */
+  /* 28/10 · como el resto del storybook (Libro.astro, retícula de Neety): título pequeño en 1–6, la entradilla desde la 7; las páginas, títulos pequeños */
+  #h-catalogo, .cat-pag { font-family: var(--font-sans, inherit) !important; font-size: 1.125rem !important; font-weight: 500; line-height: 1.3 !important; letter-spacing: 0; }
+  @media (width >= 48rem) {
+    .seccion { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: calc(var(--spacing) * 6); align-items: baseline; }
+    .seccion > * { grid-column: 1 / -1; min-width: 0; }
+    #h-catalogo { grid-column: 1 / span 6; grid-row: 1; }
+    .seccion > .cat-intro { grid-column: 7 / -1; margin-top: 0; max-width: none; font-size: 1rem; }
+  }
+  .cat-intro { margin-top: calc(var(--spacing) * 4); max-width: 60ch; font-size: var(--text-body); line-height: 1.6; color: var(--fg2); text-wrap: pretty; }
+  .cat-grupo { margin-top: calc(var(--spacing) * 16); }
+  .cat-grupo:first-of-type { margin-top: calc(var(--spacing) * 12); }
+  .cat-pag { display: flex; align-items: baseline; gap: calc(var(--spacing) * 3); padding-bottom: 0; /* 28/10 · sin raya (Eric: «muchísima raya horizontal») */ font-family: var(--font-display); font-size: var(--text-h3); line-height: var(--text-h3--line-height); font-weight: 400; }
+  .cat-ruta { color: var(--fg2); text-decoration: none; }
+  .cat-ruta:hover { color: var(--fg); }
+  .cat-rej { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: calc(var(--spacing) * 12) calc(var(--spacing) * 6); margin: calc(var(--spacing) * 8) 0 0; padding: 0; list-style: none; }
+  @media (width < 48rem) { .cat-rej { grid-template-columns: 1fr; gap: calc(var(--spacing) * 8); } }
+  .cat-tarjeta { display: flex; flex-direction: column; gap: calc(var(--spacing) * 4); min-width: 0; }
+  .cat-mini { display: block; width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: cover; border-radius: var(--radius-lg); box-shadow: 0 0 0 1px var(--rule); background: var(--rule); }
+  .cat-texto { display: grid; gap: calc(var(--spacing) * 1); }
+  .cat-vid { position: relative; margin: 0; }
+  .cat-vid video { display: block; object-position: center bottom; aspect-ratio: 16 / 9; } /* 29/10 · el vídeo es 16:9: a 16:10 se cortaban los lados («Esta página no existe») */
+  .cat-vid.abajo .cat-est { top: auto; bottom: calc(var(--spacing) * 3); } /* el 404 tiene lo suyo arriba: ahí el selector va abajo */ /* el pie y el 404 tienen lo que importa abajo */
+  /* 29/10 · Eric: el selector de estación, arriba (abajo tapaba justo lo interesante: el pie y el 404 tienen lo suyo abajo) */
+  .cat-est { position: absolute; left: calc(var(--spacing) * 3); top: calc(var(--spacing) * 3); display: flex; gap: 2px; padding: 3px; border-radius: var(--radius-full); background: rgb(20 14 11 / 0.7); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: inset 0 0 0 1px rgb(245 245 247 / 0.16); }
+  .cat-est button { padding: 4px 10px; border: 0; border-radius: var(--radius-full); background: none; color: rgb(245 245 247 / 0.88); font: inherit; font-size: var(--text-detail); line-height: 1.4; cursor: pointer; transition: background-color 0.3s ease, color 0.3s ease; }
+  .cat-est button:hover { color: #F5F5F7; }
+  .cat-est button[aria-checked='true'] { background: #F5F5F7; color: #302018; }
+  /* 30/10 (pulido, Nilo) · a 320 la píldora con las cuatro estaciones (278 px) se salía 10 px de la tarjeta (280 - 24 de margen): letra y relleno más pequeños por debajo de 30 rem */
+  @media (width < 30rem) { .cat-est button { padding-inline: 7px; font-size: 0.75rem; } }
+  .cat-nombre { font-size: var(--text-ui); line-height: var(--text-ui--line-height); font-weight: 500; color: var(--fg); }
+  .cat-archivo { color: var(--fg2); overflow-wrap: anywhere; }
+  .cat-que { margin-top: calc(var(--spacing) * 2); font-size: var(--text-aux); line-height: 1.5; color: var(--fg); text-wrap: pretty; }
+  .cat-de { font-size: var(--text-aux); line-height: 1.5; color: var(--fg2); text-wrap: pretty; }
+</style>

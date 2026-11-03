@@ -1,0 +1,47 @@
+---
+// RONDA 137 · LA 404 «EL TIEMPO ENCIMA» (sustituye a «El corte», ronda 136). Andoni: «La página 404 que sea el 404 en grande y que en función de
+// la estación se le acumule algo encima: invierno nieve, otoño hojas, primavera flores y verano le da el solete.»
+// El 404 en Family, tan grande como cabe, de pie sobre la línea de carriles. Todo en un lienzo 2D: las cifras se dibujan con la fuente real y de su
+// tinta sale una MÁSCARA (celdas de 2 px) contra la que choca lo que cae; lo que se posa se pinta una vez en la capa acumulada y se suma a la máscara
+// (así la nieve se apila sobre la nieve). Las técnicas de las hojas, la nieve y las flores son las del pie (rondas 42–44 y 76).
+//   INVIERNO: nieve que cuaja en los hombros de las cifras (caperuzas blancas con sombra fría) y un poco en el suelo.
+//   OTOÑO: hojas que caen meciéndose, se posan encima y se amontonan al pie.
+//   PRIMAVERA: flores que brotan por los cantos de arriba (margaritas, azules, alguna rosa) en una ola de izquierda a derecha.
+//   VERANO: el sol: un haz cálido que entra desde arriba y sigue al ratón, la sombra que proyectan las cifras y motas de polvo en la luz.
+//     RONDA 178 · Eric: «en verano tiene que crecer hierba de 404, como en verano que crece mucha»: HIERBA alta que brota por todos los cantos que
+//     miran arriba (también dentro del 0) y, más alta y espesa, a ras del suelo; crece en ola de izquierda a derecha, se mece con la brisa y el haz la dora.
+// Sin bucle cuando ya está todo posado (el verano sí respira, solo a la vista). Movimiento reducido: el estado final, quieto. Cambia en vivo con la estación.
+---
+
+<div class="cuatro" data-cuatro>
+  <canvas class="lienzo" data-cuatro-lienzo aria-hidden="true"></canvas>
+</div>
+
+<script>
+  import { tiempoEncima } from '../../scripts/tiempo-encima';
+  // (el motor vive en src/scripts/tiempo-encima.ts: lo comparte la palabra «Contáctanos» del pie)
+  const raiz = document.querySelector<HTMLElement>('[data-cuatro]');
+  const zona = raiz?.closest<HTMLElement>('[data-cuatro-zona]');
+  const cv = raiz?.querySelector<HTMLCanvasElement>('[data-cuatro-lienzo]');
+  if (zona && cv) tiempoEncima({ zona, cv });
+</script>
+
+<style>
+  .cuatro {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  .lienzo {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    opacity: 0; /* regla dura 3: lo que pinta el JS nace invisible */
+    transition: opacity 0.8s ease;
+  }
+  .lienzo:global(.listo) {
+    opacity: 1;
+  }
+</style>

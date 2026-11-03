@@ -1,0 +1,662 @@
+---
+// LA CARGA (rondas 15–20). Referencia: off.site (pantalla lisa, el logotipo aparece, de su última letra sale un hilo que baja).
+// RONDA 20 · Andoni: «¿podemos hacer que para iniciar la web tengas que hacer un círculo con el ratón? La animación de la gota tiene que parecer
+// que dibuja las v realmente».
+// · EMPEZAR: aparece «sa  ia» y el visitante DIBUJA UN CÍRCULO con el ratón (o con el dedo): un rastro Naranja sigue al puntero; al cerrar la
+//   vuelta, el círculo se encoge hasta el pie de la primera v y se convierte en la gota, que echa a rodar. Pista a los 1,6 s: «dibuja un círculo».
+//   Espacio o intro arrancan sin círculo; «saltar», rueda o Escape lo saltan.
+// · LAS V SE DIBUJAN A TRAZO: la máscara de las v ya no es un frente en x sino la PLUMADA de la gota: un trazo grueso con puntas redondas que
+//   sigue exactamente su camino (baja por el trazo grueso, sube por el fino, rodea el rizo, la ligadura) y se va destapando con
+//   `stroke-dashoffset` a la vez que ella avanza. La tinta aparece solo donde la gota ha pasado.
+// · El camino por las v está medido en el propio trazo del logotipo y suavizado (Catmull-Rom) al compilar; luego el palo de la i, por debajo
+//   del punto, el lomo de la última «a» y la punta de su rabo.
+// · DESCOLGARSE (ronda 19): engorda y cae por su peso; un CUELLO la sujeta y se estrangula; resto que se retrae y SATÉLITE detrás.
+// · CAER (ronda 19): tiembla, se estira y la ESTELA se desenfoca en la dirección del movimiento. SALPICA en la base del tronco.
+// · La cámara baja con ella: logotipo y gota viven en un «mundo» que sube y el HERO SUBE DESDE ABAJO (`html.cargando`, puesto en el <head>).
+//   La gota toca el suelo bajo el titular en el mismo instante en que la cámara se posa → `savvia:gota` → el árbol se genera.
+// · Recarga a media página o movimiento reducido: sin carga. Sin JS no existe.
+// RONDA 66 · «el logo: savvia con la tipografía» y «la animación inicial también tiene que depender de la estación». La palabra en Family; el camino
+// de la gota se mide EN EL NAVEGADOR sobre las letras reales (cada letra con un Range; la altura de x de Family, 0,47 em, y la línea base de la fuente).
+// RONDA 68 · «que en la animación de carga se dibuje el isotipo únicamente, cae la gota y el isotipo se encaja arriba con savvia»: la gota DIBUJA el
+// isotipo (la v caligráfica: sube por la colita, baja por el trazo grueso, sube por el fino y remata en la bola), se descuelga de la bola y cae; mientras
+// cae, el isotipo vuela a la barra y se encaja delante de «savvia» (en el sitio exacto del isotipo del logotipo), que aparece con él.
+// RONDA 83 · Eric: «aquí se tiene que dibujar una V» y «el botón de saltar, más alineado al diseño». El gesto que arranca ya no es un círculo: es
+// una V (la del isotipo): el puntero baja, hace vértice y vuelve a subir abriéndose. Reconocida, el trazo del visitante se recoge hasta el arranque
+// del isotipo y se vuelve la gota, que dibuja la v de savvia. «Saltar» es la píldora de cristal de la casa (.btn-primary, con su gota), en pequeño.
+// Y la consigna, a solas en la pantalla, es un TITULAR (Family, como todos), no una línea mono pequeña: «me parece AI slop» (Eric).
+// RONDA 153 · Andoni: «que se dibuje el isotipo cuando hace la animación de carga, y la gota caiga de este» (savvia-isotipo-gota.svg, 512 × 512)
+import isoRaw from '../../public/savvia-isotipo-gota.svg?raw';
+// RONDA 144 · Andoni: «el logotipo, de momento, vuelve a un estado anterior» (el isotipo de naturaleza, sin raíces: un solo trazo)
+// y «la carga volvemos al círculo»
+const ISO = [...isoRaw.matchAll(/ d="([^"]+)"/g)].map((m) => m[1].replace(/\s+/g, ' ')).join(' ');
+import { flecha } from '../lib/flecha';
+import { langDe } from '../lib/i18n';
+const en = langDe(Astro.currentLocale) === 'en';
+---
+
+<div class="cargador" aria-hidden="true" data-cargador>
+  <!-- el RASTRO del puntero mientras se dibuja la V; reconocida, se recoge hasta ser la gota -->
+  <canvas class="rastro" data-rastro></canvas>
+  <!-- RONDA 66 · el tiempo de la ESTACIÓN alrededor de la carga: hojas en otoño, nieve en invierno, pétalos en primavera, motas de luz en verano -->
+  <canvas class="tiempo" data-tiempo></canvas>
+  <!-- el ISOTIPO: apenas visible, y encima su copia a plena tinta que destapa la plumada de la gota (fuera del «mundo»: no baja con la cámara, vuela a la barra) -->
+  <svg class="logo" viewBox="3 3 58 58" aria-hidden="true" data-logo>
+    <defs><mask id="cg-vv" maskUnits="userSpaceOnUse" x="-100" y="-100" width="800" height="900">
+      <path fill="none" stroke="#fff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round" pathLength="1000" stroke-dasharray="1000 3000" stroke-dashoffset="1000" data-plumada />
+    </mask></defs>
+    <path class="fija" d={ISO} />
+    <path class="vv" d={ISO} mask="url(#cg-vv)" />
+  </svg>
+  <div class="mundo" data-mundo>
+    <p class="pista" data-carga-pista><span class="dicho">{en ? 'Draw a circle.' : 'Dibuja un círculo.'}</span><span class="como"><span class="con-raton">{en ? 'Click and draw it without letting go.' : 'Haz clic y dibújalo sin soltar.'}</span><span class="con-dedo">{en ? 'Drag your finger.' : 'Arrastra el dedo.'}</span></span></p>
+    <!-- «esc para saltar»: abajo, centrado, con un poco de aire; aparece y se va con la consigna -->
+    <button type="button" class="btn-secondary btn-sm saltar" data-saltar><kbd>esc</kbd><span class="btn-tx"><span class="con-tecla">{en ? 'to skip' : 'para saltar'}</span><span class="sin-tecla">{en ? 'Skip' : 'Saltar'}</span></span><Fragment set:html={flecha()} /></button>
+    <!-- el CUELLO que sujeta la gota mientras se descuelga, el resto que se retrae y el satélite (en el sistema del mundo) -->
+    <svg class="cuello" viewBox="-20 -4 40 40" data-cuello><path d="" data-cuello-d /><circle class="resto" r="0" data-resto /></svg>
+    <i class="satelite" data-satelite></i>
+    <!-- la GOTA: cabeza + estela de velocidad con desenfoque de movimiento (el x del viewBox es la dirección de avance: la svg gira) -->
+    <svg class="gota" viewBox="-34 -8 42 16" data-gota>
+      <defs>
+        <filter id="cg-mb" filterUnits="userSpaceOnUse" x="-160" y="-60" width="220" height="120"><feGaussianBlur stdDeviation="0 0" data-mb /></filter>
+        <filter id="cg-mbc" filterUnits="userSpaceOnUse" x="-40" y="-40" width="80" height="80"><feGaussianBlur stdDeviation="0 0" data-mbc /></filter>
+        <!-- RONDA 65 · «en vez de naranja, una gota más realista de agua/savia»: cuerpo translúcido (se ve el fondo), canto que refracta, luz
+             transmitida abajo y un brillo especular arriba. La luz no gira con la gota (el grupo `data-brillo` se contra-rota). -->
+        <radialGradient id="cg-agua" cx="0" cy="0" r="6" gradientUnits="userSpaceOnUse">
+          <stop offset="0" style="stop-color: var(--gota-a)" stop-opacity=".10" />
+          <stop offset=".62" style="stop-color: var(--gota-b)" stop-opacity=".18" />
+          <stop offset=".86" style="stop-color: var(--gota-c)" stop-opacity=".5" />
+          <stop offset="1" stop-color="#fff3e4" stop-opacity=".85" />
+        </radialGradient>
+        <radialGradient id="cg-trans" cx="0" cy="3.4" r="4.6" gradientUnits="userSpaceOnUse">
+          <stop offset="0" style="stop-color: var(--gota-luz)" stop-opacity=".62" />
+          <stop offset="1" style="stop-color: var(--gota-luz)" stop-opacity="0" />
+        </radialGradient>
+      </defs>
+      <path class="estela" filter="url(#cg-mb)" d="M0 -2.4C-22 -1.8 -70 -0.6 -110 0C-70 0.6 -22 1.8 0 2.4Z" transform="scale(0, 1)" data-estela />
+      <g filter="url(#cg-mbc)">
+        <circle r="6" fill="url(#cg-agua)" />
+        <g data-brillo>
+          <circle r="4.6" cy="0" fill="url(#cg-trans)" transform="translate(0 .4)" />
+          <ellipse cx="-2.1" cy="-2.6" rx="1.7" ry="1.05" transform="rotate(-35 -2.1 -2.6)" fill="#fff" fill-opacity=".92" />
+          <circle cx="2.4" cy="-1.2" r=".45" fill="#fff" fill-opacity=".6" />
+        </g>
+      </g>
+    </svg>
+  </div>
+</div>
+
+<script>
+  import { salpicar, formaGota } from '../scripts/gota';
+  import { rgbDe } from '../scripts/tinta';
+  const velo = document.querySelector<HTMLElement>('[data-cargador]');
+  const w = window as any, raiz = document.documentElement;
+  w.__cargaViva = true; // el salvavidas del <head> solo actúa si este script no llega a correr
+  const soltar = () => { if (w.__gotaSuelta) return; w.__gotaSuelta = true; dispatchEvent(new Event('savvia:gota')); };
+  const hero = document.querySelector<HTMLElement>('[data-hero]');
+  const terminar = () => {
+    if (hero) hero.style.transform = '';
+    if (raiz.classList.contains('cargando')) { raiz.classList.remove('cargando', 'carriles-entran'); void raiz.offsetWidth; raiz.classList.add('carriles-entran'); }
+  };
+  if (!velo || !hero || !raiz.classList.contains('cargando') || scrollY > 40) { terminar(); velo?.remove(); soltar(); }
+  else {
+    const $ = <T extends Element>(s: string) => velo.querySelector<T>(s)!;
+    const mundo = $<HTMLElement>('[data-mundo]'), logo = $<SVGSVGElement>('[data-logo]'), plumada = $<SVGPathElement>('[data-plumada]');
+    const gota = $<SVGSVGElement>('[data-gota]'), estela = $<SVGPathElement>('[data-estela]'), mb = $<SVGElement>('[data-mb]'), mbc = $<SVGElement>('[data-mbc]');
+    const cuello = $<SVGSVGElement>('[data-cuello]'), cuelloD = $<SVGPathElement>('[data-cuello-d]'), resto = $<SVGCircleElement>('[data-resto]');
+    const satelite = $<HTMLElement>('[data-satelite]'), pista = $<HTMLElement>('[data-carga-pista]'), rastro = $<HTMLCanvasElement>('[data-rastro]');
+    const seno = (t: number) => 0.5 - 0.5 * Math.cos(Math.PI * t);
+    const cubica = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+    const entre = (t: number, a: number, b: number) => Math.min(1, Math.max(0, (t - a) / (b - a)));
+    // tiempos (ms) desde que la gota echa a rodar
+    // RONDA 145 · Andoni: «quita el isotipo y pon solo savvia con la tipo de titulares»: la carga ya no dibuja ninguna v; el círculo se recoge en
+    // la gota, que tiembla un instante en el centro y cae (RODAR, corto)
+    // RONDA 153 · vuelve: la gota dibuja el isotipo nuevo (el anillo) y se descuelga de su bolita
+    // RONDA 156 · Eric: «quitemos el isotipo»: la carga vuelve a la ronda 145 (el círculo se recoge en la gota y cae), sin dibujar nada
+    const SIN_ISOTIPO = true;
+    const RODAR = SIN_ISOTIPO ? 420 : 2400, COLGAR = 560, CAER = 1450, FIN = RODAR + COLGAR + CAER;
+    let t0 = 0, D = 0, meta = { x: 0, y: 0 }, largo: number[] = [], total = 0, pts: [number, number][] = [], largoVV = 1;
+    let px = 0, py = 0, parado = false, estelaS = 0, camAnt = 0, ult = 0, rota = false, satT = -1, satY = 0, satX = 0, arrancando = false;
+    // EL CAMINO (ronda 68): el eje del isotipo, medido sobre su dibujo (370 × 439; con un trazo de 50 cubre el 99,8 % de la forma), suavizado; y al
+    // final, la bola, de cuya parte de abajo cuelga la gota. `nVV`: cuántos puntos dibuja la plumada.
+    let nVV = 1, destino = { x: 0, y: 0, s: 1 };
+    // RONDA 144 (2.ª) · Andoni: «el isotipo de la carga es distinto al del resto de sitios»: el isotipo ES la v del logotipo (su primer trazo,
+    // viewBox 6,39 6,44 469,69 × 425,38 del propio logotipo). Su eje, el esqueleto del trazo medido sobre el dibujo (skeletonize), del gancho a la bola
+    // RONDA 153 · el eje del isotipo-gota (512 × 512): el centro del anillo medido por radios desde (256, 256) (tools en el registro), de la punta de
+    // arriba a la izquierda, bajando por la izquierda, por abajo (el goterón), subiendo por la derecha, hasta la BOLITA de arriba (de ella cuelga la gota)
+    // RONDA 153 (2.ª) · «usamos el de 24 px en todos lados, así no hay discrepancias»: el isotipo de la carga es el mismo que el de la barra y el
+    // favicon (viewBox 3 3 58 58); su eje, medido igual (por radios desde 32, 32), de la punta de arriba a la izquierda a la bolita
+    const VX = 3, VY = 3, VW = 58;
+    const EJE: [number, number][] = [[19.9, 9.3], [17.9, 11], [16.1, 13.1], [14.6, 15.2], [13.5, 17.5], [12.5, 19.8], [11.8, 22.2], [11.3, 24.5], [10.9, 26.7], [10.6, 29], [10.4, 31.2], [10.4, 33.5], [10.3, 35.8], [10.5, 38.2], [11.3, 40.4], [12.8, 42.2], [14.7, 43.7], [16.3, 45.2], [17.8, 46.7], [19.2, 48.4], [20.5, 50.5], [21.9, 52.6], [23.9, 54.2], [26.2, 55.2], [28.7, 55.8], [31.2, 56], [33.7, 55.9], [36.2, 55.6], [38.6, 55], [41, 54.2], [43.2, 53.1], [45.4, 51.8], [47.4, 50.4], [49.2, 48.7], [50.9, 46.7], [52.3, 44.7], [53.5, 42.5], [54.5, 40.2], [55.2, 37.8], [55.7, 35.3], [56, 32.8], [55.9, 30.3], [55.6, 27.8], [55.1, 25.4], [54.2, 23], [53.2, 20.7], [51.9, 18.6], [50.4, 16.6], [48.7, 14.7], [46.8, 13.1], [44.7, 11.6], [42.5, 10.4], [40.2, 9.4], [37.8, 8.7], [35.3, 8.7], [33.3, 8.9]];
+    const liso = (q: [number, number][], n = 6): [number, number][] => { const o: [number, number][] = []; for (let k = 0; k < q.length - 1; k++) for (let j = 0; j < n; j++) { const t = j / n; o.push([q[k][0] + (q[k + 1][0] - q[k][0]) * t, q[k][1] + (q[k + 1][1] - q[k][1]) * t]); } o.push(q[q.length - 1]); return o.map((_, i) => { if (i === 0 || i === o.length - 1) return o[i]; let x = 0, y = 0, c = 0; for (let k = -3; k <= 3; k++) { const r = o[Math.min(o.length - 1, Math.max(0, i + k))]; x += r[0]; y += r[1]; c++; } return [x / c, y / c] as [number, number]; }); };
+    const trazo = (q: [number, number][]) => 'M' + q.map(([x, y]) => `${x.toFixed(1)} ${y.toFixed(1)}`).join('L');
+    const caminoIso = (): [number, number][] => {
+      if (SIN_ISOTIPO) { const cx = innerWidth / 2, cy = innerHeight * 0.42; nVV = 2; return [[cx, cy - 18], [cx, cy - 6], [cx, cy]]; }
+      const eje = liso(EJE);
+      nVV = eje.length;
+      plumada.setAttribute('d', trazo(eje));
+      // la gota se descuelga de la parte de abajo de la bola
+      const cuelga = liso([eje[eje.length - 1], [33.5, 12.6], [33.6, 14]], 5).slice(1);
+      const r = logo.getBoundingClientRect(), k = r.width / VW;
+      return [...eje, ...cuelga].map(([x, y]) => [r.left + (x - VX) * k, r.top + (y - VY) * k] as [number, number]);
+    };
+    const medir = () => {
+      const hr = hero.getBoundingClientRect(); D = hr.top; // el hero nace desplazado: esa es la distancia que baja la cámara
+      const r = logo.getBoundingClientRect();
+      pts = caminoIso();
+      // el sitio del isotipo en la barra: en el logotipo (1184 × 439) su caja empieza en 6,39 · 6,44 y mide 425,38 de alto
+      // RONDA 153 · el sitio del isotipo en la barra: la caja de .logo-iso (cuadrada, el mismo 512 × 512)
+      const nl = document.querySelector('.logo-iso')?.getBoundingClientRect();
+      if (nl && nl.height) destino = { x: nl.left - r.left, y: nl.top - r.top, s: nl.height / r.height };
+      const c = hero.querySelector('.arbol-caja')!.getBoundingClientRect();
+      meta = { x: c.left + c.width / 2, y: c.bottom - 4 }; // en el MUNDO (el hero ya lleva sumada la distancia D)
+      largo = [0]; for (let i = 1; i < pts.length; i++) largo.push(largo[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+      total = largo[largo.length - 1]; largoVV = largo[nVV - 1];
+    };
+    const enCamino = (k: number): [number, number] => {
+      const s = k * total; let i = 1; while (i < largo.length - 1 && largo[i] < s) i++;
+      const f = (s - largo[i - 1]) / Math.max(1e-6, largo[i] - largo[i - 1]);
+      return [pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * f, pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * f];
+    };
+    const acabar = (conGota: boolean) => {
+      if (parado) return; parado = true;
+      try { localStorage.setItem('savvia:carga', '1'); } catch {} // ronda 69: solo la primera vez
+      terminar();
+      velo.classList.add('fuera');
+      if (conGota) logo.style.transform = `translate3d(${destino.x}px, ${destino.y}px, 0) scale(${destino.s})`;
+      gota.style.opacity = '0';
+      const caja = hero.querySelector<HTMLElement>('.arbol-caja');
+      if (conGota && caja) salpicar(caja, caja.offsetWidth / 2, caja.offsetHeight - 4, { n: 11, fuerza: 1.05, color: 'rgba(246, 228, 204, .7)' });
+      soltar();
+      setTimeout(() => velo.remove(), 1400);
+    };
+    const brillo = gota.querySelector<SVGGElement>('[data-brillo]')!;
+    const ponerGota = (x: number, y: number, ang: number, sx: number, sy: number) => {
+      gota.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${ang}rad) scale(${sy.toFixed(3)}, ${sx.toFixed(3)})`;
+      brillo.setAttribute('transform', `rotate(${((-ang * 180) / Math.PI).toFixed(1)})`);
+    };
+    const cuelloPath = (Lc: number, r: number, wa: number, wm: number) =>
+      `M${-wa} 0C${-wm} ${Lc * 0.42} ${-r * 0.8} ${Lc * 0.72} ${-r * 0.8} ${Lc}L${r * 0.8} ${Lc}C${r * 0.8} ${Lc * 0.72} ${wm} ${Lc * 0.42} ${wa} 0Z`;
+    const paso = (ahora: number) => {
+      if (parado) return;
+      if (!ult) { ult = ahora; medir(); velo.classList.add('en-marcha'); }
+      ult = ahora;
+      if (!rota) { requestAnimationFrame(paso); return; }
+      const [ax, ay] = pts[pts.length - 1]; // la punta del rabo de la «a» (pantalla)
+      let x = 0, y = 0, cam = 0, ang = 0, sx = 1, sy = 1, gordo = 1;
+      const t = ahora - t0;
+      if (t < RODAR) {
+        // RODAR: por las v (se dibujan a su paso, con la plumada), luego por encima de la i y de la a
+        const k = seno(entre(t, 0, RODAR));
+        [x, y] = enCamino(k);
+        plumada.setAttribute('stroke-dashoffset', String(1000 * (1 - Math.min(1, (k * total) / largoVV + 0.012))));
+        const vx = x - px, vy = y - py, vel = Math.hypot(vx, vy);
+        ang = vel > 0.2 ? Math.atan2(vy, vx) : 0;
+        gota.style.opacity = String(entre(t, 0, 180));
+      } else if (t < RODAR + COLGAR) {
+        // DESCOLGARSE: la gota engorda y cae por su peso; el cuello se alarga y se estrangula
+        const k = entre(t, RODAR, RODAR + COLGAR), e = k * k * (3 - 2 * k);
+        gordo = 1 + 0.32 * e;
+        const r = 6 * gordo, Lc = 3 + 17 * e;
+        x = ax + Math.sin(k * 9) * 0.6 * (1 - k); y = ay + Lc;
+        cuello.style.opacity = '1'; cuello.style.transform = `translate3d(${ax}px, ${ay}px, 0)`;
+        cuelloD.setAttribute('d', cuelloPath(Lc, r, 4.2 - 2.6 * e, r * 0.72 * (1 - Math.pow(k, 1.6)) + 0.7));
+        ang = Math.PI / 2; sx = 1 - 0.08 * e; sy = 1 + 0.16 * e;
+      } else {
+        // CAER: en pantalla acelera (gravedad); la cámara baja con curva suave y se posa a la vez que la gota toca el suelo
+        const tCae = t - (RODAR + COLGAR);
+        if (tCae < 40) { cuelloD.setAttribute('d', ''); satT = ahora; satX = ax; satY = ay + 9; satelite.style.opacity = '1'; }
+        const rk = entre(tCae, 0, 220); resto.setAttribute('r', String(2.4 * (1 - rk))); resto.setAttribute('cy', String(-3 * rk));
+        const k = entre(t, RODAR + COLGAR, FIN);
+        cam = cubica(k);
+        const y0 = ay + 20;
+        const pantY = y0 + (meta.y - D - y0) * Math.pow(k, 2.1);
+        y = pantY + cam * D;
+        x = ax + (meta.x - ax) * seno(k) + Math.sin(k * Math.PI * 2) * 14 * (1 - k);
+        mundo.style.transform = `translate3d(0, ${-cam * D}px, 0)`;
+        // el isotipo vuela a la barra mientras la gota cae
+        const v = cubica(entre(t, RODAR + COLGAR * 0.6, FIN - 150));
+        logo.style.transform = `translate3d(${(destino.x * v).toFixed(1)}px, ${(destino.y * v).toFixed(1)}px, 0) scale(${(1 + (destino.s - 1) * v).toFixed(4)})`;
+        hero.style.transform = `translate3d(0, ${(1 - cam) * D}px, 0)`;
+        if (k > 0.02) velo.classList.add('cayendo');
+        gordo = 1.3;
+        const velP = Math.abs(y - cam * D - (py - camAnt * D));
+        const vx = x - px, vy = y - py;
+        ang = Math.PI / 2 + (Math.hypot(vx, vy) > 0.2 ? (Math.atan2(vy, vx) - Math.PI / 2) * 0.5 : 0);
+        const f = formaGota(tCae, velP); sx = f.sx; sy = f.sy;
+        estelaS += ((tCae > 100 ? Math.min(1, velP * 0.05) : 0) - estelaS) * 0.22;
+        estela.setAttribute('transform', `scale(${estelaS.toFixed(3)}, 1)`);
+        estela.style.opacity = String(0.42 * estelaS);
+        mb.setAttribute('stdDeviation', `${Math.min(9, velP * 0.28).toFixed(2)} 0.4`);
+        mbc.setAttribute('stdDeviation', `${Math.min(1.4, velP * 0.035).toFixed(2)} 0.15`);
+        if (satT > 0) {
+          const ts = (ahora - satT) / 1000, sy2 = satY + 0.5 * 1500 * ts * ts * 0.85;
+          satelite.style.transform = `translate3d(${satX}px, ${sy2 + cam * D}px, 0) scale(${1 + ts * 1.2}, ${1 - ts * 0.15})`;
+          satelite.style.opacity = String(Math.max(0, 1 - ts * 1.6));
+        }
+      }
+      ponerGota(x, y, ang, gordo * sx, gordo * sy);
+      camAnt = cam; px = x; py = y;
+      if (t >= FIN) return acabar(true);
+      requestAnimationFrame(paso);
+    };
+    // ── LA V (ronda 83): el puntero deja un rastro; cuando baja, hace vértice y vuelve a subir abriéndose (dos brazos rectos, uno a cada lado), arranca
+    type P = { x: number; y: number; t: number };
+    const traza: P[] = [];
+    // EL PINCEL (ronda 83 · Eric: «que sea como de pincel, un trazo parecido al isotipo»): el rastro se pinta con la pluma del isotipo: grueso al bajar,
+    // fino al subir y en horizontal, entra afilado y remata en una bolita. Sobre lienzo: un segmento por tramo, cada uno con su grosor y puntas redondas.
+    type M = { x: number; y: number; w: number };
+    const ctxR = rastro.getContext('2d')!, NIEBLA = `rgb(${rgbDe('niebla', velo!).join(',')})`, PASO = 3; // ronda 132: leído en la carga (en invierno, Cacao sobre la nieve)
+    velo!.style.setProperty('--agua', rgbDe('niebla', velo!).join(' ')); // estela, cuello y satélite del color del trazo (sin amarillo detrás del agua)
+    const grueso = () => Math.max(8, Math.min(11.5, Math.min(innerWidth, innerHeight) * 0.0145)); // Eric: «el trazo un poco más fino» (antes 11–16 px)
+    const suave = (k: number) => k * k * (3 - 2 * k);
+    const pincel = (q: { x: number; y: number }[]): M[] => {
+      if (q.length < 2) return [];
+      const G = grueso(), F = G * 0.3;
+      // el ratón da los puntos a saltos: remuestreo a paso fijo, y la punta
+      const r: { x: number; y: number }[] = [{ x: q[0].x, y: q[0].y }];
+      let falta = PASO;
+      for (let i = 1; i < q.length; i++) {
+        let ax = q[i - 1].x, ay = q[i - 1].y, L = Math.hypot(q[i].x - ax, q[i].y - ay);
+        while (L >= falta) { const t = falta / L; ax += (q[i].x - ax) * t; ay += (q[i].y - ay) * t; r.push({ x: ax, y: ay }); L -= falta; falta = PASO; }
+        falta -= L;
+      }
+      r.push({ x: q[q.length - 1].x, y: q[q.length - 1].y });
+      const n = r.length;
+      const media = (i: number, k: number, f: (j: number) => number) => { const v = Math.min(k, i, n - 1 - i); let s = 0; for (let j = i - v; j <= i + v; j++) s += f(j); return s / (2 * v + 1); };
+      const p = r.map((_, i) => ({ x: media(i, 3, (j) => r[j].x), y: media(i, 3, (j) => r[j].y) })); // sin el temblor del pulso
+      // la pluma: cuánto baja el trazo en cada punto (1 = recto hacia abajo, 0 = hacia arriba)
+      const crudo = p.map((_, i) => { const a = p[Math.max(0, i - 2)], b = p[Math.min(n - 1, i + 2)], L = Math.hypot(b.x - a.x, b.y - a.y) || 1; return F + (G - F) * suave(entre(0.5 + (0.5 * (b.y - a.y)) / L, 0.45, 0.95)); });
+      return p.map((pt, i) => ({ x: pt.x, y: pt.y, w: Math.max(0.9, media(i, 6, (j) => crudo[j]) * suave(entre(i * PASO, 0, 30))) }));
+    };
+    const pintar = (m: M[], color = NIEBLA) => {
+      const d = Math.min(2, devicePixelRatio || 1), W = Math.round(innerWidth * d), H = Math.round(innerHeight * d);
+      if (rastro.width !== W || rastro.height !== H) { rastro.width = W; rastro.height = H; }
+      ctxR.setTransform(d, 0, 0, d, 0, 0);
+      ctxR.clearRect(0, 0, innerWidth, innerHeight);
+      if (!m.length) return;
+      ctxR.lineCap = 'round'; ctxR.strokeStyle = ctxR.fillStyle = color;
+      for (let i = 1; i < m.length; i++) { ctxR.lineWidth = (m[i - 1].w + m[i].w) / 2; ctxR.beginPath(); ctxR.moveTo(m[i - 1].x, m[i - 1].y); ctxR.lineTo(m[i].x, m[i].y); ctxR.stroke(); }
+      // el remate: la bolita del isotipo, en la punta
+      const u = m[m.length - 1];
+      ctxR.beginPath(); ctxR.arc(u.x, u.y, Math.max(u.w / 2, grueso() * 0.36), 0, Math.PI * 2); ctxR.fill();
+    };
+    const arrancar = (v: { x: number; y: number }[]) => {
+      if (parado || arrancando || rota) return; arrancando = true;
+      rastro.style.opacity = '';
+      clearTimeout(pistaT); clearTimeout(ayudaT); pista.classList.remove('ver');
+      velo.classList.add('v-hecha');
+      traza.length = 0;
+      // la V dibujada se recoge hasta el arranque del isotipo y se vuelve la gota (rAF: los atributos SVG no se animan igual en todos)
+      const [gx, gy] = pts[0], tinta = pincel(v);
+      let a0 = 0;
+      const enc = (ahora: number) => {
+        if (!a0) a0 = ahora;
+        const k = Math.min(1, (ahora - a0) / 620), e = cubica(entre(k, 0.16, 1)); // un instante quieta (se ve reconocida) y se recoge
+        pintar(tinta.map((p) => ({ x: p.x + (gx - p.x) * e, y: p.y + (gy - p.y) * e, w: p.w + (12 - p.w) * e * e })), NIEBLA); // el mismo color del trazo hasta ser agua
+        if (k < 1) return void requestAnimationFrame(enc);
+        rastro.style.opacity = '0'; velo.classList.add('dibuja'); rota = true; t0 = performance.now(); px = gx; py = gy;
+      };
+      requestAnimationFrame(enc);
+    };
+    // RONDA 144 · EL CÍRCULO (vuelve el de las rondas 20–82): hacia atrás desde el puntero se suma el giro alrededor del centro de lo dibujado; cuando
+    // la vuelta se cierra (≥ 342°) con un radio de verdad (≥ 18 px) y redonda (el radio no varía más de un 55 %), arranca. Devuelve dónde empieza.
+    const leerCirculo = (): number => {
+      const n = traza.length; if (n < 14) return -1;
+      for (let ini = Math.max(0, n - 160); ini <= n - 14; ini += 2) {
+        const q = traza.slice(ini);
+        let cx = 0, cy = 0; for (const p of q) { cx += p.x; cy += p.y; } cx /= q.length; cy /= q.length;
+        let giro = 0, rMin = 1e9, rMax = 0, rSum = 0, prev = Math.atan2(q[0].y - cy, q[0].x - cx), pos = 0, neg = 0, salto = false;
+        for (let i = 1; i < q.length; i++) {
+          const a = Math.atan2(q[i].y - cy, q[i].x - cx); let d = a - prev; if (d > Math.PI) d -= 2 * Math.PI; if (d < -Math.PI) d += 2 * Math.PI; giro += d; prev = a;
+          // ronda 153: un zigzag o un garabato también «dan vueltas» alrededor de su centro, a saltos y cambiando de sentido: cada paso, poco giro y en el mismo sentido
+          if (Math.abs(d) > 0.9) salto = true; if (d > 0.01) pos++; else if (d < -0.01) neg++;
+          const r = Math.hypot(q[i].x - cx, q[i].y - cy); rSum += r; rMin = Math.min(rMin, r); rMax = Math.max(rMax, r);
+        }
+        const rMed = rSum / (q.length - 1);
+        // RONDA 152 · «que dibujar el círculo sea más fácil»: basta con tres cuartos de vuelta (270°), un radio de 12 px y una forma bastante
+        // libre (óvalos y círculos torcidos valen); antes, 342°, 18 px y casi redondo
+        // RONDA 153 · «ahora es demasiado fácil dibujar el círculo»: punto medio entre la ronda 144 (342°, 18 px, casi redondo) y la 152 (270°, 12 px,
+        // libre): casi una vuelta entera (315°), un radio de verdad (20 px) y bastante redondo
+        const fiel = Math.max(pos, neg) / Math.max(1, pos + neg);
+        if (!salto && fiel >= 0.85 && Math.abs(giro) >= Math.PI * 1.75 && rMed >= 20 && (rMax - rMin) <= rMed * 1.25) return ini;
+      }
+      return -1;
+    };
+    // RONDA 137 · Andoni: «al dibujar la V inicial, que funcione con el hover». Con ratón (o lápiz) basta con MOVERLO: el puntero deja el rastro de
+    // pincel y el rastro SE SECA (lo que tiene más de 1,6 s se va; es la ventana en la que se busca la V). Con el dedo, arrastrando (el táctil no tiene
+    // hover). Pulsar no hace falta, pero tampoco estorba. (La regla de la ronda 83, «con el clic pulsado», queda revertida.)
+    const VIDA = 2400; // ronda 152: el rastro dura más (da tiempo a cerrar la vuelta despacio)
+    let secando = 0, ayudaT = 0;
+    const secar = () => {
+      secando = 0;
+      if (parado || rota || arrancando) return;
+      const ahora = performance.now();
+      let quita = 0; while (quita < traza.length && ahora - traza[quita].t > VIDA) quita++;
+      if (quita) traza.splice(0, quita);
+      pintar(pincel(traza));
+      if (traza.length) secando = requestAnimationFrame(secar);
+    };
+    const anadir = (e: PointerEvent) => {
+      const ahora = performance.now(), u = traza[traza.length - 1];
+      if (u && ahora - u.t > 800) traza.length = 0; // una pausa larga corta el trazo: no se une con el siguiente
+      traza.push({ x: e.clientX, y: e.clientY, t: ahora });
+      while (traza.length && ahora - traza[0].t > VIDA) traza.shift();
+      pintar(pincel(traza));
+      if (!secando) secando = requestAnimationFrame(secar);
+      const ia = leerCirculo();
+      if (ia >= 0) { cancelAnimationFrame(secando); secando = 0; arrancar(traza.slice(ia).map(({ x, y }) => ({ x, y }))); }
+    };
+    let dedo = false;
+    const mover = (e: PointerEvent) => {
+      if (parado || rota || arrancando) return;
+      if ((e.target as Element | null)?.closest?.('[data-saltar]')) return;
+      if (!dedo) return; // RONDA 205 · Eric: primero el clic y luego el círculo (sin pulsar, un trazo suelto antes arrancaba la carga)
+      anadir(e);
+    };
+    addEventListener('pointerdown', (e) => {
+      if (parado || rota || arrancando || (e.target as Element | null)?.closest?.('[data-saltar]')) return;
+      dedo = true; traza.length = 0; anadir(e);
+    });
+    const soltarTrazo = () => { dedo = false; traza.length = 0; pintar(pincel(traza)); };
+    addEventListener('pointerup', soltarTrazo); addEventListener('pointercancel', soltarTrazo);
+    addEventListener('pointermove', mover, { passive: true });
+    // quien a los 4,5 s aún no ha hecho la V recibe la segunda línea: basta con mover el ratón (o arrastrar el dedo)
+    ayudaT = window.setTimeout(() => { if (!rota && !arrancando && !parado) pista.classList.add('ayuda'); }, 4500);
+    // la pista «dibuja una v» es el estado inicial
+    const pistaT = setTimeout(() => { if (!rota && !arrancando) pista.classList.add('ver'); }, 250); // ronda 68: es el estado inicial
+    const saltar = () => acabar(false);
+    $('[data-saltar]').addEventListener('click', saltar);
+    addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') return saltar();
+      if ((e.key === ' ' || e.key === 'Enter') && !rota && !arrancando && !parado) { e.preventDefault(); medir(); const cx = innerWidth / 2, cy = innerHeight / 2; arrancar(Array.from({ length: 41 }, (_, i) => ({ x: cx + 40 * Math.cos((i / 40) * Math.PI * 2 - Math.PI / 2), y: cy + 40 * Math.sin((i / 40) * Math.PI * 2 - Math.PI / 2) }))); }
+    });
+    // la rueda salta, pero solo un scroll de verdad (≥ 90 px seguidos y pasado el primer medio segundo): un roce del trackpad —o la inercia de la página
+    // anterior— saltaba la carga sin que nadie lo pidiera, y dibujando la V con el dedo es fácil rozarlo
+    let rueda = 0, ruedaT = 0;
+    const conRueda = (e: WheelEvent) => {
+      if (parado) return removeEventListener('wheel', conRueda);
+      const ahora = performance.now(); if (ahora < 500) return;
+      if (ahora - ruedaT > 400) rueda = 0;
+      ruedaT = ahora; rueda += Math.abs(e.deltaY);
+      if (rueda >= 90) saltar();
+    };
+    addEventListener('wheel', conRueda, { passive: true });
+    document.fonts.ready.then(() => requestAnimationFrame(paso));
+    // ── EL TIEMPO DE LA ESTACIÓN (ronda 66): 36 motas que caen (o suben, en verano) detrás de la palabra, en el color de la estación
+    {
+      const cv = $<HTMLCanvasElement>('[data-tiempo]'), c = cv.getContext('2d')!, dpr = Math.min(2, devicePixelRatio || 1);
+      const est = raiz.dataset.estacion || 'otono', arbol = getComputedStyle(raiz).getPropertyValue('--arbol').trim() || '#c65c2d';
+      const W = innerWidth, H = innerHeight; cv.width = W * dpr; cv.height = H * dpr; c.scale(dpr, dpr);
+      const azar = (a: number, b: number) => a + Math.random() * (b - a);
+      const motas = Array.from({ length: 36 }, () => ({ x: azar(0, W), y: azar(-H, H), v: azar(18, 46), r: azar(2, 5), f: azar(0, 6.3), g: azar(-1, 1) }));
+      let ant = 0;
+      const pinta = (ahora: number) => {
+        if (parado || !cv.isConnected) return;
+        const dt = ant ? Math.min(0.05, (ahora - ant) / 1000) : 0; ant = ahora;
+        c.clearRect(0, 0, W, H);
+        for (const m of motas) {
+          const sube = est === 'verano';
+          m.y += (sube ? -0.35 : 1) * m.v * dt; m.f += dt * (est === 'invierno' ? 0.8 : 1.6);
+          const x = m.x + Math.sin(m.f) * (est === 'otono' ? 22 : 10);
+          if (!sube && m.y > H + 10) { m.y = -10; m.x = azar(0, W); }
+          if (sube && m.y < -10) { m.y = H + 10; m.x = azar(0, W); }
+          c.save(); c.translate(x, m.y);
+          if (est === 'invierno') { c.globalAlpha = 0.5; c.fillStyle = '#eef3fb'; c.beginPath(); c.arc(0, 0, m.r * 0.6, 0, 7); c.fill(); }
+          else if (est === 'verano') { c.globalAlpha = 0.35 + 0.3 * Math.sin(m.f * 2); c.fillStyle = '#ffe3a0'; c.beginPath(); c.arc(0, 0, m.r * 0.45, 0, 7); c.fill(); }
+          else if (est === 'primavera') { c.rotate(m.f); c.globalAlpha = 0.6; c.fillStyle = m.g > 0 ? '#f7dfe6' : '#fbeef2'; c.beginPath(); c.ellipse(0, 0, m.r, m.r * 0.6, 0, 0, 7); c.fill(); }
+          else { c.rotate(m.f * 0.7 + m.g); c.globalAlpha = 0.55; c.fillStyle = m.g > 0 ? arbol : '#d9a441'; c.beginPath(); c.ellipse(0, 0, m.r * 1.4, m.r * 0.7, 0, 0, 7); c.fill(); }
+          c.restore();
+        }
+        requestAnimationFrame(pinta);
+      };
+      // primavera y verano: sin partículas en la carga (no tienen sentido); solo otoño (hojas) e invierno (nieve)
+      if (!matchMedia('(prefers-reduced-motion: reduce)').matches && (est === 'otono' || est === 'invierno')) requestAnimationFrame(pinta);
+    }
+  }
+</script>
+
+<style>
+  .cargador {
+    position: fixed;
+    inset: 0;
+    z-index: 70; /* escala de z: … 55 nav · 60 escenario sentado · 70 carga */
+    overflow: hidden;
+    pointer-events: auto; /* mientras dura, el puntero es suyo (debajo no hay nada que tocar) */
+    cursor: crosshair;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none; /* el dedo dibuja la V, no hace scroll */
+  }
+  /* 29/10 · Eric (iPhone): «el problema de las bandas en la home persiste… en el hero y footer no tienen que estar». Fija a pantalla completa y en Cacao,
+     Safari 26 pintaba con ella una banda bajo el buscador y se la quedaba al irse la carga. En móvil va en el documento, arriba del todo (la carga es con scroll 0) */
+  @media (width < 64rem) {
+    .cargador { position: absolute; inset: auto; left: 0; top: 0; width: 100%; height: 100lvh; }
+  }
+  /* el velo: la misma materia que la página. Se retira cuando la gota empieza a caer (debajo solo hay fondo: el hero aún está abajo) */
+  .cargador::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--noche);
+    transition: opacity 0.7s ease;
+  }
+  .cayendo::before {
+    opacity: 0;
+  }
+  .mundo {
+    position: absolute;
+    inset: 0;
+    will-change: transform;
+  }
+  /* RONDA 68 · el isotipo (SVG): apenas visible; su copia a plena tinta la destapa la plumada de la gota. Colocado por su esquina de arriba a la
+     izquierda (el vuelo a la barra es un translate + scale desde ahí) */
+  /* RONDA 153 · vuelve el isotipo (el anillo-gota, cuadrado) */
+  .logo {
+    --ih: clamp(9rem, 26lvh, 14rem);
+    position: absolute;
+    left: calc(50% - var(--ih) / 2);
+    top: calc(50% - var(--ih) / 2);
+    width: var(--ih);
+    height: var(--ih);
+    overflow: visible;
+    fill: var(--color-niebla);
+    transform-origin: 0 0;
+    will-change: transform;
+  }
+  /* RONDA 83 · antes de la V no existe NADA del isotipo. Con el trazo de la máscara en `1000` (raya 1000, hueco 1000) la raya siguiente empezaba justo
+     en el final del camino y su punta redonda destapaba un trozo de la bola: el hueco ahora es mayor que el camino, y además la copia a plena tinta no
+     se pinta hasta que la gota echa a rodar (.dibuja) */
+  .logo .vv {
+    visibility: hidden;
+  }
+  .dibuja .logo .vv {
+    visibility: visible;
+  }
+  .logo .fija {
+    opacity: 0;
+    transition: opacity 1.1s ease 0.2s;
+  }
+  /* RONDA 68 · «solo quiero que se vea "dibuja un círculo" [ronda 83: una v] como estado inicial»: sin guía; el isotipo solo existe donde la gota lo dibuja */
+  .en-marcha .logo .fija { opacity: 0; }
+  .cayendo .logo .fija { opacity: 0; transition-duration: 0.4s; }
+  /* EL TONO DE LA GOTA según la estación: savia ámbar en otoño, hielo en invierno, rocío verde en primavera, miel en verano */
+  .cargador {
+    --gota-a: #f3dcc0; --gota-b: #e9c9a3; --gota-c: #f6e4cc; --gota-luz: #ffd9a8;
+  }
+  :global(html[data-estacion='invierno']) .cargador { --gota-a: #e6eef8; --gota-b: #c9d8ea; --gota-c: #f1f6fc; --gota-luz: #d6e6ff; }
+  :global(html[data-estacion='primavera']) .cargador { --gota-a: #eef6dc; --gota-b: #d7e8b4; --gota-c: #f3f8e6; --gota-luz: #e6f5b8; }
+  :global(html[data-estacion='verano']) .cargador { --gota-a: #fbe7b0; --gota-b: #f0cf7c; --gota-c: #fdf0c8; --gota-luz: #ffd76a; }
+  /* el tiempo de la estación, detrás de la palabra; se va con el velo */
+  .tiempo {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    transition: opacity 0.7s ease;
+  }
+  .cayendo .tiempo { opacity: 0; }
+  /* el rastro del puntero: la V del visitante; reconocida, se enciende y se recoge hasta ser la gota */
+  .rastro {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    opacity: 0.9; /* la tinta del pincel, Rosa niebla como el isotipo (el trazo lo pinta el script) */
+    transition: opacity 0.4s ease;
+  }
+  .pista {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    translate: -50% -50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.8s ease;
+  }
+  .pista.ver {
+    opacity: 1;
+  }
+  /* RONDA 83 · la consigna es lo único que hay en la pantalla: va con la voz de los titulares (Family), no en mono pequeña */
+  .dicho {
+    font-family: var(--font-display);
+    font-size: var(--text-h2);
+    line-height: 1.1;
+    letter-spacing: -0.015em;
+    color: var(--fg);
+    white-space: nowrap;
+  }
+  /* la segunda línea (ronda 137; desde la 160, a la vez que la consigna): cuelga bajo la consigna (no la mueve) con la voz de los subtítulos */
+  .como {
+    position: absolute;
+    top: 100%;
+    margin-top: calc(var(--spacing) * 3);
+    font-size: var(--text-lead);
+    font-weight: var(--text-lead--font-weight); /* Eric: como el subtítulo del hero (Timeless Sans Light) */
+    line-height: var(--text-lead--line-height);
+    color: var(--fg2);
+    white-space: nowrap;
+    opacity: 0;
+    translate: 0 6px;
+    transition: opacity 0.6s ease, translate 0.6s var(--ease-out-expo);
+  }
+  .como .con-dedo { display: none; }
+  @media (hover: none) {
+    .como .con-raton { display: none; }
+    .como .con-dedo { display: inline; }
+  }
+  /* Eric: el subtítulo sale casi a la vez que la consigna, suave (antes esperaba 4,5 s) */
+  .pista.ver .como,
+  .pista.ayuda .como {
+    opacity: 1;
+    translate: 0 0;
+    transition: opacity 0.9s ease 0.3s, translate 0.9s var(--ease-out-expo) 0.3s;
+  }
+  /* RONDA 134 · «Saltar» es el CTA SECUNDARIO de la casa (texto en mayúsculas + flecha fina; RONDA 136: sin subrayado), en pequeño y en el gris de la pista */
+  .saltar {
+    position: absolute;
+    left: 50%;
+    bottom: calc(var(--spacing) * 8 + env(safe-area-inset-bottom, 0px));
+    translate: -50% 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.8s ease, color 0.35s ease;
+    min-height: calc(var(--spacing) * 8);
+    gap: calc(var(--spacing) * 2);
+    color: var(--fg2);
+  }
+  .saltar:hover, .saltar:focus-visible { color: var(--fg); }
+  .pista.ver ~ .saltar {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  @media (min-width: 48rem) {
+    .saltar {
+      bottom: calc(var(--spacing) * 12);
+    }
+  }
+  /* «esc para saltar» (Eric: «algo más rápido de entender»): la tecla en su chapa; en táctil no hay Esc: queda «Saltar» */
+  .saltar kbd {
+    font: inherit;
+    line-height: 1;
+    padding: calc(var(--spacing) * 1) calc(var(--spacing) * 2);
+    border-radius: var(--radius-full);
+    background: color-mix(in oklab, currentColor 16%, transparent);
+  }
+  .saltar .sin-tecla {
+    display: none;
+  }
+  @media (hover: none) {
+    .saltar kbd,
+    .saltar .con-tecla {
+      display: none;
+    }
+    .saltar .sin-tecla {
+      display: inline;
+    }
+  }
+  /* 32 px a la vista, 48 para el dedo */
+  .saltar::before {
+    content: '';
+    position: absolute;
+    inset: calc(var(--spacing) * -2);
+  }
+  .gota .estela {
+    opacity: 0; /* solo cayendo: el JS la escala y la enciende con la velocidad */
+  }
+  :global(html[data-estacion='invierno']) :is(.gota .estela, .cuello, .satelite) {
+    display: none; /* en invierno la gota cae limpia: detrás, transparente (ni estela, ni cuello, ni resto) */
+  }
+  .gota {
+    position: absolute;
+    /* el centro de la cabeza (0,0 del viewBox) cae en el punto del camino: el viewBox va de −34 a 8 en x y de −8 a 8 en y */
+    left: -34px;
+    top: -8px;
+    width: 42px;
+    height: 16px;
+    transform-origin: 34px 8px;
+    overflow: visible;
+    fill: rgb(var(--agua, 246 228 204) / 0.3); /* la estela: agua, no pintura */
+    opacity: 0;
+    will-change: transform;
+  }
+  .cuello {
+    position: absolute;
+    left: -20px;
+    top: -4px;
+    width: 40px;
+    height: 40px;
+    overflow: visible;
+    fill: rgb(var(--agua, 246 228 204) / 0.42);
+    opacity: 0;
+    transform-origin: 20px 4px;
+  }
+  .satelite {
+    position: absolute;
+    left: -1.7px;
+    top: -1.7px;
+    width: 3.4px;
+    height: 3.4px;
+    border-radius: 50%;
+    background: rgb(var(--agua, 250 238 222) / 0.75);
+    opacity: 0;
+  }
+  /* al posarse: el rastro y la gota se funden con la savia del suelo */
+  .fuera {
+    opacity: 0;
+    transition: opacity 1.2s ease;
+    pointer-events: none;
+  }
+  .fuera .gota,
+  .fuera .satelite {
+    opacity: 0 !important;
+    transition: opacity 0.25s ease;
+  }
+  :global(html:not(.cargando)) .cargador:not(.en-marcha),
+  :global(html:not(.js)) .cargador {
+    display: none;
+  }
+</style>

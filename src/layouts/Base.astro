@@ -1,0 +1,254 @@
+---
+import '../styles/global.css';
+import { Font } from 'astro:assets';
+import { langDe, enOtroIdioma, tieneEn } from '../lib/i18n';
+import { organizacion, sitioWeb, jsonLd as aJsonLd } from '../lib/seo';
+import Analytics from '@vercel/analytics/astro';
+import SpeedInsights from '@vercel/speed-insights/astro';
+
+interface Props {
+  title?: string;
+  description?: string;
+  carga?: boolean; // ronda 62: solo la home tiene la animación de carga (las páginas de proyectos, no)
+  indexar?: boolean; // 29/10 · lanzamiento: todo se indexa salvo lo que lo pida (Método, aún «próximamente», y la 404)
+  // SEO (2/11) · lo que lee Google y no se ve. `descripcionBuscador`: la meta description (el texto bajo el enlace en Google); si falta, `description`.
+  // Los Open Graph siguen con `description` (Andoni: la pestaña y las vistas previas no se tocan). `jsonLd`: los nodos de ESTA página (caso, migas,
+  // preguntas…); la entidad (Organization + WebSite, src/lib/seo.ts) va siempre en toda página indexable.
+  descripcionBuscador?: string;
+  jsonLd?: object[];
+}
+const {
+  carga = true,
+  indexar = true,
+  descripcionBuscador,
+  jsonLd: nodosPagina = [],
+  // RONDA 156 · Eric: el título de la pestaña, «savvia: elevamos tu web con IA.»; y sin «Donostia» en ningún sitio
+  title = langDe(Astro.currentLocale) === 'en' ? 'savvia: AI with judgement' : 'savvia: IA con criterio', // ronda 186 (Eric); antes «savvia: tu web con criterio» (r157)
+  description = langDe(Astro.currentLocale) === 'en'
+    ? 'We elevate your website with AI. savvia is the web studio of Eric and Andoni, specialists in orchestrating agentic development.'
+    : 'Orquestamos la IA con criterio: tu web, a la altura de tu marca y lista para seguir evolucionando.', // 29/10 (Eric)
+} = Astro.props;
+const lang = langDe(Astro.currentLocale);
+const metaDescription = descripcionBuscador ?? description;
+const grafo = indexar ? aJsonLd([organizacion(lang), sitioWeb(lang), ...nodosPagina]) : '';
+const hrefLang = (l: 'es' | 'en') => new URL(enOtroIdioma(Astro.url.pathname, l), Astro.site);
+const canonical = new URL(Astro.url.pathname, Astro.site);
+// 29/10 · la imagen para compartir: el árbol con sus raíces sobre el fondo (la noche) de la ESTACIÓN en la que se compila (los meses de estacion.ts), en el idioma de la página
+// (tools/og-arbol.cjs). Un archivo por estación: las redes guardan la imagen por dirección, así cada cambio de estación es una imagen nueva.
+// OJO: cambia al publicar; hay que publicar después del 1 de dic, mar, jun y sep.
+const mes = new Date().getMonth() + 1;
+const ogEstacion = mes >= 3 && mes <= 5 ? 'primavera' : mes >= 6 && mes <= 8 ? 'verano' : mes >= 9 && mes <= 11 ? 'otono' : 'invierno';
+const ogImagen = new URL(`/og/${ogEstacion}${lang === 'en' ? '-en' : ''}.jpg?v=5`, Astro.site);
+---
+
+<!doctype html>
+<html lang={lang} data-carga={carga ? '1' : '0'}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-visual" />
+    <!-- RONDA 290 · Eric (móvil): al escribir en un campo, el teclado cambia la altura de la ventana y TODOS los `resize` de la web recalculan su maquetación (el Estudio, los
+         Proyectos, el pie…): la página saltaba arriba y abajo. Con el dedo, un `resize` que no cambia el ancho mientras hay un campo con foco se descarta antes de que llegue a nadie. -->
+    <script is:inline>
+      (function () {
+        if (!matchMedia('(pointer: coarse)').matches) return;
+        var w = innerWidth;
+        addEventListener('resize', function (e) {
+          var a = document.activeElement;
+          if (innerWidth === w && a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA')) e.stopImmediatePropagation();
+          else w = innerWidth;
+        }, true);
+      })();
+    </script>
+    <title>{title}</title>
+    <meta name="description" content={metaDescription} />
+    {/* 30/10 (pulido) · lo que no se indexa (la 404, el Método) va sin canónica ni hreflang: la 404 declaraba un /en/404/ que no existe */}
+    {indexar && <link rel="canonical" href={canonical} />}
+    {indexar && tieneEn(Astro.url.pathname) && <><link rel="alternate" hreflang="es" href={hrefLang('es')} />
+    <link rel="alternate" hreflang="en" href={hrefLang('en')} />
+    <link rel="alternate" hreflang="x-default" href={hrefLang('es')} /></>}
+    <!-- RONDA 38 · metadatos para compartir (og/twitter en URL absoluta; `site` = https://savvia.studio) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="savvia" />
+    <meta property="og:locale" content={lang === 'en' ? 'en_GB' : 'es_ES'} />
+    {indexar && <meta property="og:url" content={canonical} />}{/* 30/10 (pulido exhaustivo): en el 404 apuntaba a /404/, que no existe */}
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImagen} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={lang === 'en' ? 'savvia: the watercolour oak and its roots under the headline “We elevate your website with AI”' : 'savvia: el roble en acuarela con sus raíces bajo el titular «Elevamos tu web con IA»'} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImagen} />
+    <!-- RONDA 156 · Eric: «sin isotipo, el favicon es el fondo principal, que cambia con la estación; el árbol en pequeño»: uno por estación
+         (tools/r156-favicon.cjs); el script de abajo pone el de la estación antes del primer pintado y lo cambia con ella -->
+    <!-- RONDA 216 · los favicons de Andoni por estación (luz tenue, savvia-favicons-telegram-luz-tenue; las anteriores, en tools/retirados/favicon-r211…r215):
+         en la pestaña el de 32 px (como en la ronda 205 de Eric) y, para iPhone, el de 180 a sangre (esquinas con su fondo: iOS las redondea) -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon-otono.png?v=217" data-icono-apple />
+    {/* 29/10 · lanzamiento (30/10): fuera el noindex general (Family ya tiene licencia web). Solo lo que pasa `indexar={false}`. */}
+    {!indexar && <meta name="robots" content="noindex, nofollow" />}
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-otono-32.png?v=226" data-icono />
+    <meta name="theme-color" content="#3b231b" />
+    <Font cssVariable="--font-family-display" preload />
+    <Font cssVariable="--font-timeless-sans" preload />
+    <Font cssVariable="--font-timeless-grotesk" />{/* (29/10) sin preload: la mono de los detalles espera a la CSS; seis fuentes a la vez retrasaban la hoja de estilos (y el primer pintado) en el móvil */}
+    <Font cssVariable="--font-manrope" />
+    <Font cssVariable="--font-mano" />
+    <Font cssVariable="--font-bricolage" />
+    <Font cssVariable="--font-switzer" />
+    <Font cssVariable="--font-inter" />
+    <Font cssVariable="--font-roboto-mono" />
+    <Font cssVariable="--font-schibsted" />{/* (02/11) Quantus y Patchbay: tipografía viva en sus casos */}
+    <Font cssVariable="--font-instrument" />
+    <Font cssVariable="--font-jetbrains" />
+    <!-- Todo lo que deba correr durante el parseo va aquí, en línea (los <script> de Astro son diferidos). -->
+    <script is:inline>
+      document.documentElement.classList.add('js');
+      // La ESTACIÓN de la web (ronda 39; ronda 40: por meses y con la paleta de Andoni): fondo oscuro, árbol y raíces. Antes del primer pintado
+      // (regla dura 3). Primavera mar–may · verano jun–ago · otoño sep–nov · invierno dic–feb. `?estacion=invierno` la fuerza (para revisar).
+      (function () {
+        var q = /[?&]estacion=(otono|invierno|primavera|verano)/.exec(location.search), m = new Date().getMonth() + 1;
+        // 29/10 · Eric: «al final si alguien cambia, quiere ver todo en esa estación», sin romper la de la fecha: la elegida dura la VISITA
+        // (sessionStorage «savvia-estacion»: pasa de página a página; al cerrar la pestaña, vuelve la de hoy)
+        var g = null; try { g = /^(otono|invierno|primavera|verano)$/.exec(sessionStorage.getItem('savvia-estacion') || ''); } catch (_) {}
+        var e = q ? q[1] : g ? g[1] : m >= 3 && m <= 5 ? 'primavera' : m >= 6 && m <= 8 ? 'verano' : m >= 9 && m <= 11 ? 'otono' : 'invierno';
+        document.documentElement.dataset.estacion = e;
+        var c = { otono: '#3b231b', invierno: '#f5f5f7', primavera: '#3a2932', verano: '#1b3125' }[e];
+        document.querySelector('meta[name="theme-color"]').setAttribute('content', c);
+        // ronda 156: el favicon de la estación (y el de iPhone), ahora y cada vez que cambie. Eric: «¿el cambio puede ser smooth?»: al cambiar, los dos
+        // iconos se FUNDEN en un lienzo de 64 px (1,2 s, 12 pasos; el href va cambiando a un data: URL) y al acabar queda el PNG de la estación nueva.
+        // (Safari ignora los cambios de favicon en caliente: ahí se ve el de la carga.) ?v=217: luz tenue (ronda 216).
+        // ronda 205: en la pestaña, la versión PEQUEÑA de 32 px (ahora, la de luz tenue de Andoni)
+        var V = '226', srcIcono = function (est) { return '/favicon-' + est + '-32.png?v=' + V; };
+        var icono = function (est) {
+          var a = document.querySelector('[data-icono]'), b = document.querySelector('[data-icono-apple]');
+          if (a) a.setAttribute('href', srcIcono(est));
+          if (b) b.setAttribute('href', '/apple-touch-icon-' + est + '.png?v=' + V);
+        };
+        icono(e);
+        var fundiendo = 0;
+        addEventListener('savvia:estacion', function () {
+          var de = e, a = document.documentElement.dataset.estacion; e = a;
+          try { sessionStorage.setItem('savvia-estacion', a); } catch (_) {}
+          var link = document.querySelector('[data-icono]');
+          // (30/10) en el móvil el fundido no se ve (la pestaña no enseña el favicon en vivo) y son 12 cambios del icono en 1,2 s: directo
+          if (!link || de === a || matchMedia('(prefers-reduced-motion: reduce)').matches || matchMedia('(pointer: coarse)').matches) return icono(a);
+          var id = ++fundiendo, i1 = new Image(), i2 = new Image(), listos = 0;
+          var arranca = function () {
+            if (++listos < 2 || id !== fundiendo) return;
+            var c = document.createElement('canvas'); c.width = c.height = 64; var k = c.getContext('2d'), paso = 0, N = 12;
+            var tic = function () {
+              if (id !== fundiendo) return;
+              paso++; var t = paso / N; t = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+              k.clearRect(0, 0, 64, 64); k.globalAlpha = 1; k.drawImage(i1, 0, 0, 64, 64); k.globalAlpha = t; k.drawImage(i2, 0, 0, 64, 64);
+              if (paso < N) { link.setAttribute('href', c.toDataURL('image/png')); setTimeout(tic, 100); } else icono(a);
+            };
+            tic();
+          };
+          i1.onload = i2.onload = arranca; i1.onerror = i2.onerror = function () { icono(a); };
+          i1.src = srcIcono(de); i2.src = srcIcono(a);
+        });
+      })();
+      // RONDA 39 · la tipografía de texto está a prueba (ABC Areal): ?tipo=antes enseña la pareja anterior (Manrope + IBM Plex Mono)
+      if (/[?&]tipo=antes/.test(location.search)) document.documentElement.classList.add('tipo-antes');
+      // PRUEBA hero-claro (Eric, 03/10) · el hero sobre claro y lo que era claro, en oscuro: ?hero=blanco (blanco puro) o ?hero=claro (Rosa niebla).
+      // Sin el parámetro no cambia nada. Para quitar la prueba: buscar «PRUEBA hero-claro» (Base, Hero, Nav, estela.ts)
+      var hc = /[?&]hero=(claro|blanco)/.exec(location.search); if (hc) document.documentElement.classList.add('hero-claro', 'hero-' + hc[1], 'sobre-claro');
+      // PRUEBA bloque-azul (Eric, 12/10, Agentation sobre #servicios: «me gusta el azul que está en invierno, no sé si lo podemos aplicar aquí»):
+      // ?bloque=hielo pone en Servicios el Hielo de invierno (#CADCEE) en las cuatro estaciones; ?bloque=cielo, un azul de cielo PROPIO de cada estación.
+      // Sin el parámetro no cambia nada (hoy manda la ronda 152: pétalo · prado · hoja seca · hielo). Para quitarla: buscar «PRUEBA bloque-azul» (Base, global.css).
+      var bq = /[?&]bloque=(hielo|cielo)/.exec(location.search); if (bq) document.documentElement.dataset.bloque = bq[1];
+      // RONDA 64/68 · la transición de savia: la página nueva nace CUBIERTA de savia (html.vt-llega) y transicion.ts la escurre; salvavidas a los 3 s
+      try { var vt = +sessionStorage.getItem('savvia:vt') || 0; sessionStorage.removeItem('savvia:vt'); if (Date.now() - vt < 4000 && !matchMedia('(prefers-reduced-motion: reduce)').matches) { document.documentElement.classList.add('vt-llega'); setTimeout(function () { document.documentElement.classList.remove('vt-llega'); }, 3000); } } catch (e) {}
+      // RONDA 16 · los carriles cargan SIEMPRE puestos (ya no se recuerda si se quitaron) y se trazan al posarse la carga.
+      // La carga: el hero nace desplazado 100 lvh (sube desde abajo). Con movimiento reducido no hay carga. Salvavidas: si el script
+      // de la carga no llegara a correr, a los 8 s el hero vuelve a su sitio.
+      // RONDA 69 · «la animación de carga inicial, que solo se ejecute la primera vez»: se recuerda en este navegador (localStorage) al terminarla o saltarla;
+      // ?carga=1 la fuerza (para revisarla)
+      // RONDA 83 · ?carga=1 la fuerza SIEMPRE: aunque ya se haya visto y aunque el sistema pida movimiento reducido (es para revisarla)
+      var cargaPedida = /[?&]carga=1/.test(location.search);
+      // RONDA 161 · vuelve la regla de la ronda 69: solo la primera vez (se recuerda al terminarla o saltarla). ?carga=0 la salta; ?carga=1 la fuerza
+      var cargaVista = /[?&]carga=0/.test(location.search);
+      try { if (localStorage.getItem('savvia:carga') === '1' && !cargaPedida) cargaVista = true; } catch (e) {}
+      // Lighthouse/PageSpeed, rastreadores y tests (navigator.webdriver, user-agent Chrome-Lighthouse) no pueden dibujar el círculo: sin carga ven el hero (si no, NO_LCP). ?carga=1 la fuerza igualmente
+      if ((navigator.webdriver || /Lighthouse|HeadlessChrome/.test(navigator.userAgent)) && !cargaPedida) cargaVista = true;
+      if (document.documentElement.dataset.carga === '1' && !cargaVista && (cargaPedida || !matchMedia('(prefers-reduced-motion: reduce)').matches)) {
+        document.documentElement.classList.add('cargando');
+        // RONDA 19: la carga la ARRANCA el visitante (mantener pulsado), así que el salvavidas ya no mira si la gota cayó: solo si el script de la carga no llegó a correr
+        setTimeout(function () { if (!window.__cargaViva) document.documentElement.classList.remove('cargando'); }, 8000);
+      } else document.documentElement.classList.add('carriles-entran', 'sin-carga'); // sin-carga (ronda 83): la parrilla del hero entra antes que el árbol
+    </script>
+    <!-- lo que una página necesita pedir pronto, con la estación ya puesta (Portfolio: las fotos de las primeras piezas) -->
+    <slot name="head" />
+    {indexar && <script type="application/ld+json" set:html={grafo} />}
+  </head>
+  <body>
+    <a href="#contenido" class="detail sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:bg-niebla focus:px-3 focus:py-2 focus:text-cacao">
+      {lang === 'en' ? 'Skip to content' : 'Saltar al contenido'}
+    </a>
+    <slot />
+    <script>
+      import '../scripts/entradas';
+      import '../scripts/copiar-correo'; // el correo se copia, no abre el programa de correo
+      import '../scripts/transicion';
+      import '../scripts/carteles'; // el cartel de cada vídeo, también de fondo: en iPhone no queda negro mientras carga
+      // 29/10 · fuera '../scripts/bordes-safari' (las tiras fijas en los bordes para teñir las barras de Safari): Eric, «quitamos las bandas»
+      // ronda 134: fuera '../scripts/cta' (la gota de los CTA de cristal: el CTA ya es Coral lleno)
+      import '../scripts/cta-liquido'; // ronda 136: el color del CTA primario entra como un líquido desde donde entra el cursor
+      // RONDA 156 · Eric: «la música va a cambiar por completo menos la del mockup del ordenador»: fuera los sonidos de clic (clics.ts, ronda 125); la música es la radio (Radio.astro)
+    </script>
+    <!-- RONDA 38 · Modo revisión · Agentation: clica un elemento, escribe la nota y devuelve un markdown con el selector CSS real. Sin import map a
+         propósito: los `?deps=` de esm.sh reescriben las importaciones internas a las MISMAS URL (una sola instancia de React). Solo escritorio. -->
+    <!-- RONDA 83 · Eric: «ponme agentation siempre»: en LOCAL (astro dev) va siempre puesto; publicada, ?feedback=1 se RECUERDA en ese navegador
+         (localStorage «savvia:feedback») hasta ?feedback=0. Quien no lo haya pedido nunca sigue sin cargar nada.
+         RONDA 153: Andoni lo quitó. RONDA 156 (12/10): Eric lo vuelve a pedir («ponme agentation») y que no se solape con el (+) flotante (Mando.astro,
+         abajo a la derecha; desde la ronda 156, la radio): la barra de Agentation se aparta a la izquierda (`#reviewRoot` desplaza su barra fija con --ag-x). -->
+    <script is:inline define:vars={{ dev: import.meta.env.DEV }}>
+      (() => {
+        const q = new URLSearchParams(location.search);
+        let on = dev;
+        try {
+          if (q.has('feedback')) localStorage.setItem('savvia:feedback', q.get('feedback') === '0' ? '0' : '1');
+          const g = localStorage.getItem('savvia:feedback');
+          if (g) on = g === '1';
+        } catch (e) { if (q.has('feedback')) on = q.get('feedback') !== '0'; }
+        if (!on) return;
+        const desktop = matchMedia('(hover:hover)').matches && innerWidth >= 900;
+        if (!desktop) {
+          if (!q.has('feedback')) return; // el aviso, solo si se ha pedido en esta visita
+          const n = document.createElement('div');
+          n.textContent = 'Modo feedback: solo escritorio.';
+          n.style.cssText = 'position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:100001;font:11px/1 ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase;color:#EADDE7;background:#302018;border:1px solid #f65340;border-radius:6px;padding:9px 12px';
+          addEventListener('DOMContentLoaded', () => document.body.appendChild(n));
+          return;
+        }
+        const boot = async () => {
+          try {
+            const [React, dom, ag] = await Promise.all([
+              import('https://esm.sh/react@18.3.1'),
+              import('https://esm.sh/react-dom@18.3.1/client?deps=react@18.3.1'),
+              import('https://esm.sh/agentation@3.0.2?deps=react@18.3.1,react-dom@18.3.1'),
+            ]);
+            const host = document.createElement('div');
+            host.id = 'reviewRoot';
+            document.body.appendChild(host);
+            // Ronda 156 · Eric: «cuidado que no se solape con el +»: la barra de Agentation nace en la esquina inferior derecha (20 px), donde vive el
+            // (+) flotante (Mando.astro: 44 px a 32 px del borde). Se aparta a su izquierda (32 + 44 + 16) y a su misma altura.
+            const css = document.createElement('style');
+            css.textContent = '[class*="styles-module__toolbar"]{left:32px!important;right:auto!important;bottom:32px!important}'; // ronda 156: la radio (que crece hacia la izquierda con el nombre de la pieza) vive en la esquina derecha; Agentation pasa a la izquierda
+            document.head.appendChild(css);
+            dom.createRoot(host).render(React.createElement(ag.Agentation));
+          } catch (e) {
+            console.error('[feedback] no se pudo cargar Agentation:', e && e.message);
+          }
+        };
+        if (document.readyState === 'complete') boot();
+        else addEventListener('load', boot, { once: true });
+      })();
+    </script>
+    <!-- SEO (2/11) · Vercel Analytics y Speed Insights (Core Web Vitals reales): sin cookies. Hay que ACTIVARLOS en el proyecto de Vercel (Andoni) o /_vercel/insights y /_vercel/speed-insights dan 404. -->
+    <Analytics />
+    <SpeedInsights />
+  </body>
+</html>

@@ -1,0 +1,192 @@
+---
+// RONDA 296 · Eric: «al final, antes del footer, pondremos el slider que finalmente descartamos de la home, de 4 ilustraciones de mentores» · «para así
+// evitar que, si solo hay un proyecto de filtro o ninguno, la página se quede bastante descolgada». Es el testimonio que rotaba en «Más proyectos»
+// (Anteriores.astro, rondas 66–292, hoy `VOZ_EN_MOSAICO = false`), sacado a su componente: el retrato al carboncillo que se DIBUJA (ronda 68–72),
+// la cita que sube palabra a palabra y nombre y cargo escalonados (ronda 193).
+// 27/10 · Eric: «en vez de "Ver más proyectos", al tener cuatro mentores: serie de proyectos, mentor, serie de proyectos, mentor…». Ya no es un slider:
+// cada instancia es UN mentor fijo (`k`); Portfolio.astro los intercala en la rejilla. Todos con el retrato a la izquierda y la cita a la derecha (Eric:
+// «igual que el de José Luis»: se probó alternar de lado).
+import { home } from '../data/idioma';
+import { langDe } from '../lib/i18n';
+// RONDA 307, 26.ª · también vale para un testimonio que no está en la lista (`dato`): el del final de cada caso de estudio
+type Dato = { n: string; r: string; retrato: string; q: string };
+// 28/10 · `cel`: el tamaño de la celda del semitono en px (Eric: «el de Unai, más fino»); por defecto, el de siempre
+// 28/10 · `escala`: cuánto crece el retrato en escritorio (Eric: «Unai, un pelín más grande»); por defecto, 1
+interface Props { k?: number; dato?: Dato; cel?: number; escala?: number }
+const { k = 0, dato, cel = 3.5, escala = 1 } = Astro.props;
+const lang = langDe(Astro.currentLocale), en = lang === 'en';
+const t: Dato = dato ?? home(lang).proyectos.testimonios[k];
+---
+
+<figure class="voz" data-voces data-cel={cel} style={escala !== 1 ? `--escala:${escala}` : undefined}>
+  <div class="retratos" aria-hidden="true">
+    <img class="fuente-r" src={t.retrato} alt="" width="800" height="800" loading="lazy" decoding="async" data-retrato />
+    <canvas class="retrato-cv" data-rc></canvas>
+  </div>
+  <div class="voz-txt">
+    <blockquote class="vq font-display on" data-vq>{en ? `“${t.q}”` : `«${t.q}»`}</blockquote>
+    <figcaption class="quien on" data-quien><b>{t.n}</b><span>{t.r}</span></figcaption>
+  </div>
+</figure>
+
+<script>
+  const reducido = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // el CARBONCILLO en la tinta del texto de la sección (alfa = lo oscuro del trazo), con semitono a 45° y rayas que marcan el orden del dibujo
+  const ruido = (() => {
+    const N = 256, t = new Float32Array(N * N); let h = 1234567;
+    for (let i = 0; i < t.length; i++) { h = (h * 1103515245 + 12345) & 0x7fffffff; t[i] = h / 0x7fffffff; }
+    return (x: number, y: number) => {
+      const xi = Math.floor(x), yi = Math.floor(y), fx = x - xi, fy = y - yi, sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
+      const g = (a: number, b: number) => t[((b & 255) << 8) | (a & 255)];
+      return (g(xi, yi) * (1 - sx) + g(xi + 1, yi) * sx) * (1 - sy) + (g(xi, yi + 1) * (1 - sx) + g(xi + 1, yi + 1) * sx) * sy;
+    };
+  })();
+  type Prep = { W: number; H: number; d: Float32Array; t: Float32Array; rgb: number[]; im?: ImageData };
+  const preparar = (voz: HTMLElement, img: HTMLImageElement, cv: HTMLCanvasElement): Prep | null => {
+    const dpr = Math.min(1.25, devicePixelRatio || 1), r = cv.getBoundingClientRect(), W = Math.round(r.width * dpr), H = Math.round(r.height * dpr);
+    if (!W || !img.naturalWidth) return null;
+    cv.width = W; cv.height = H;
+    const o = document.createElement('canvas'); o.width = W; o.height = H; const oc = o.getContext('2d')!;
+    const s = Math.min(W / img.naturalWidth, H / img.naturalHeight); oc.drawImage(img, (W - img.naturalWidth * s) / 2, H - img.naturalHeight * s, img.naturalWidth * s, img.naturalHeight * s);
+    const px = oc.getImageData(0, 0, W, H).data, n = W * H, d = new Float32Array(n), t = new Float32Array(n);
+    const esc = 1 / dpr, CEL = Number(voz.dataset.cel) || 3.5;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const i = y * W + x, a = px[i * 4 + 3] / 255;
+      const osc = 1 - (0.299 * px[i * 4] + 0.587 * px[i * 4 + 1] + 0.114 * px[i * 4 + 2]) / 255;
+      const rx = x / W - 0.5, ry = y / H - 0.46, rr = Math.sqrt(rx * rx + ry * ry * 0.8), borde = rr < 0.36 ? 1 : Math.max(0, 1 - (rr - 0.36) / 0.16);
+      const u = (x + y) * esc * 0.7071, v = (x - y) * esc * 0.7071;
+      const tinta = Math.min(1, Math.pow(osc, 1.05) * a) * borde;
+      const cel = CEL, fu = (u / cel) % 1, fv = (((v / cel) % 1) + 1) % 1, du = fu - 0.5, dv = fv - 0.5, r = Math.sqrt(du * du + dv * dv) * cel;
+      const R = Math.sqrt(tinta) * cel * 0.58, punto = Math.min(1, Math.max(0, (R - r) / 0.7 + 0.5));
+      const peso = 0.28 + 0.34 * (1 - Math.abs(tinta - 0.5) * 2) + 0.2 * (1 - borde);
+      d[i] = tinta * (1 - peso) + punto * peso * (tinta > 0.02 ? 1 : 0);
+      t[i] = 0.5 * (1 - d[i]) + 0.32 * ruido(u / 46, v / 2.6) + 0.18 * ruido(x * esc / 90, y * esc / 90);
+    }
+    const m = getComputedStyle(voz).color.match(/[\d.]+/g)!.map(Number);
+    return { W, H, d, t, rgb: [m[0], m[1], m[2]] };
+  };
+  const pintar = (cv: HTMLCanvasElement, P: Prep, p: number) => {
+    const c = cv.getContext('2d')!, im = (P.im ??= c.createImageData(P.W, P.H)), o = im.data, [R, G, B] = P.rgb, n = P.W * P.H, lo = p * 1.18 - 0.14;
+    for (let i = 0; i < n; i++) {
+      const di = P.d[i]; if (di < 0.02) continue;
+      const q = (lo - P.t[i]) / 0.14, e = q <= 0 ? 0 : q >= 1 ? 1 : q * q * (3 - 2 * q);
+      if (!e) continue;
+      const j = i * 4; o[j] = R; o[j + 1] = G; o[j + 2] = B; o[j + 3] = 255 * di * 0.8 * e;
+    }
+    c.putImageData(im, 0, 0);
+  };
+  const listo = (img: HTMLImageElement) => (img.complete && img.naturalWidth ? Promise.resolve() : new Promise<void>((r) => img.addEventListener('load', () => r(), { once: true })));
+  document.querySelectorAll<HTMLElement>('[data-voces]').forEach((voz) => {
+    const img = voz.querySelector<HTMLImageElement>('[data-retrato]')!, cv = voz.querySelector<HTMLCanvasElement>('[data-rc]')!;
+    const q = voz.querySelector<HTMLElement>('[data-vq]')!, quien = voz.querySelector<HTMLElement>('[data-quien]')!;
+    let anchoR = 0, gen = 0;
+    // la cita sube palabra a palabra; nombre y cargo entran cuando va por la mitad (--dq)
+    const palabras = (q.textContent || '').trim().split(/\s+/);
+    q.textContent = '';
+    palabras.forEach((w, j) => {
+      const caja = document.createElement('span'), dentro = document.createElement('span');
+      caja.className = 'w'; caja.style.setProperty('--w', String(j)); dentro.textContent = w; caja.append(dentro);
+      q.append(caja, j < palabras.length - 1 ? ' ' : '');
+    });
+    q.classList.add('partida');
+    quien.style.setProperty('--dq', `${Math.round(Math.min(palabras.length, 40) * 24 * 0.55 + 120)}ms`);
+    if (!reducido) { q.classList.remove('on'); quien.classList.remove('on'); voz.classList.add('js'); }
+    const dibujar = async () => {
+      const mia = ++gen; if (img.loading === 'lazy') img.loading = 'eager';
+      await listo(img);
+      if (mia !== gen) return;
+      q.classList.add('on'); quien.classList.add('on');
+      const P = preparar(voz, img, cv); if (!P) return;
+      anchoR = innerWidth; cv.classList.add('on');
+      if (reducido) { pintar(cv, P, 1); return; }
+      const t0 = performance.now(), DUR = 1600;
+      let impar = false;
+      const paso = (ahora: number) => {
+        if (mia !== gen) return;
+        const p = Math.min(1, (ahora - t0) / DUR);
+        impar = !impar;
+        if (impar || p >= 1) pintar(cv, P, 1 - Math.pow(1 - p, 1.5));
+        if (p < 1) requestAnimationFrame(paso);
+      };
+      requestAnimationFrame(paso);
+    };
+    // se dibuja al asomar (si un filtro lo esconde y vuelve, ya está dibujado)
+    new IntersectionObserver((e, o) => { if (e[0].isIntersecting) { dibujar(); o.disconnect(); } }, { threshold: 0.35 }).observe(voz);
+    addEventListener('resize', () => {
+      if (!img.naturalWidth || !cv.classList.contains('on') || innerWidth === anchoR) return;
+      anchoR = innerWidth; gen++; const P = preparar(voz, img, cv); if (P) pintar(cv, P, 1);
+    });
+  });
+</script>
+
+<style>
+  .voz {
+    display: grid;
+    gap: calc(var(--spacing) * 8);
+    align-items: center;
+    color: var(--fg);
+    --sube: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .retratos {
+    position: relative;
+    display: grid;
+    width: min(80%, 18rem);
+    aspect-ratio: 1 / 1;
+    justify-self: center;
+  }
+  .fuente-r { display: none; }
+  .retrato-cv {
+    grid-area: 1 / 1;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    mix-blend-mode: multiply;
+    transition: opacity 0.2s ease;
+  }
+  .retrato-cv.on { opacity: 1; }
+  .vq {
+    font-size: var(--text-h3);
+    line-height: 1.2;
+    text-wrap: pretty;
+  }
+  .vq.partida :global(.w) { display: inline-block; }
+  .vq.partida :global(.w > span) {
+    display: inline-block;
+    opacity: 0;
+    transform: translateY(0.45em);
+    filter: blur(6px);
+  }
+  .vq.partida.on :global(.w > span) {
+    opacity: 1;
+    transform: none;
+    filter: none;
+    transition: opacity 0.7s ease, transform 0.9s var(--sube), filter 0.7s ease;
+    transition-delay: calc(var(--w) * 24ms);
+  }
+  .quien {
+    display: grid;
+    gap: calc(var(--spacing) * 1);
+    margin-top: calc(var(--spacing) * 8);
+    --dq: 300ms;
+  }
+  .voz.js .quien > * { opacity: 0; transform: translateY(0.5em); filter: blur(4px); }
+  .voz.js .quien.on > * { opacity: 1; transform: none; filter: none; transition: opacity 0.7s ease, transform 0.9s var(--sube), filter 0.7s ease; transition-delay: var(--dq); }
+  .voz.js .quien.on > span { transition-delay: calc(var(--dq) + 110ms); }
+  .quien b { font-weight: 500; color: var(--fg); }
+  .quien span { color: var(--fg2); }
+  /* 29/10 · Eric: «en mobile Unai está demasiado pequeño y muy alejado de su reseña»: el retrato a todo el ancho (hasta 24rem) y sin hueco, que el
+     pie del lienzo ya se desvanece y hace de aire */
+  @media (width < 64rem) {
+    .voz { gap: 0; }
+    /* el que viene con escala (Unai, con más aire en su lámina) crece también aquí, desde el pie de la figura, para no alejarse de la cita */
+    .retratos { width: min(100%, 24rem); scale: calc(1 + (var(--escala, 1) - 1) * 0.5); margin-bottom: calc((1 - var(--escala, 1)) * 60%); transform-origin: 50% 82%; }
+    .quien { margin-top: calc(var(--spacing) * 4); }
+  }
+  @media (width >= 64rem) {
+    .voz { grid-template-columns: 5fr 7fr; gap: calc(var(--spacing) * 16); }
+    .retratos { width: 100%; scale: var(--escala, 1); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .retrato-cv, .quien > *, .vq :global(.w > span) { transition: none !important; }
+  }
+</style>

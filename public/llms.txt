@@ -1,0 +1,48 @@
+# savvia
+
+> savvia es el estudio de diseño y desarrollo web con IA de Eric y Andoni. Elevamos tu web con IA: webs a medida, diseñadas y construidas con desarrollo agéntico, documentadas en una receta (savvia.md) para que tu equipo las siga cambiando con IA sin salirse de su marca. Sede en Donostia (España), clientes en seis países. Desde 2020.
+
+savvia existe para orquestar el diseño y desarrollo de tu web con IA. La IA es la base; el criterio sigue siendo nuestro. Así evitamos el AI slop y llegamos a algo hecho a medida. Como resultado te llevas una receta propia: una librería de skills diseñada para que tu proyecto escale con IA sin perder su voz. Eso es savvia agentic: tu web, orquestada con IA y criterio.
+
+## Qué hacemos
+
+- Estrategia: narrativa de la web, arquitectura de contenidos, auditoría de tu web.
+- Diseño y movimiento: diseño digital, sistema de diseño, ilustraciones animadas, animaciones 3D, interacciones GSAP.
+- Desarrollo: desarrollo agéntico, integraciones con CMS, multilenguaje, migraciones de Webflow a IA, SEO técnico, accesibilidad y rendimiento.
+- Después: la receta (savvia.md) y formación a tu equipo.
+
+## Tres formas de trabajar contigo
+
+- End-to-end: desde la primera conversación hasta la web publicada; pensamos, diseñamos y la construimos contigo, y te la dejamos lista para que tu equipo la haga crecer con IA.
+- Colaboración: nos sumamos a tu equipo o a tu agencia en la parte que más lo necesite: el diseño, el movimiento o el desarrollo.
+- Consultoría: decidimos contigo qué necesita tu web, te asesoramos en movimiento, desarrollo agéntico y CMS, y la ordenamos para que tu equipo la cambie con IA sin salirse de tu marca.
+
+## El método
+
+Entender, decidir, documentar, entregar.
+
+## Páginas
+
+- [Inicio](https://savvia.studio/): qué hacemos, los problemas que resolvemos, savvia agentic, proyectos, servicios, el estudio y preguntas frecuentes.
+- [Proyectos](https://savvia.studio/proyectos/): webs a medida de principio a fin para empresas de software, fintech, energía, logística y educación.
+- [Caso de estudio: Neety](https://savvia.studio/proyectos/neety/): diseño y desarrollo agéntico para una startup de ventas B2B (SaaS): 40 páginas en dos idiomas que su equipo sigue cambiando con Claude.
+- [Manifiesto](https://savvia.studio/manifiesto/): voz propia, tú marcas el ritmo de tu negocio, una receta propia.
+- [Storybook](https://savvia.studio/storybook/): el sistema de diseño y desarrollo de la propia web de savvia.
+- [Lab](https://savvia.studio/lab/): las pruebas que hacemos antes de saber si funcionan.
+
+## Equipo y contacto
+
+- Eric Ruiz Molero y Andoni Martínez Talavera, fundadores.
+- Correo: hola@savvia.studio
+- Aviso legal: https://savvia.studio/aviso-legal/
+
+## English
+
+> savvia is the AI web design and development studio of Eric and Andoni. We elevate your website with AI: custom websites, designed and built with agentic development and documented in a recipe (savvia.md) so your team can keep changing them with AI without leaving the brand. Based in Donostia (Spain), clients in six countries. Since 2020.
+
+- [Home](https://savvia.studio/en/)
+- [Projects](https://savvia.studio/en/proyectos/)
+- [Case study: Neety](https://savvia.studio/en/proyectos/neety/)
+- [Manifesto](https://savvia.studio/en/manifiesto/)
+- Three ways of working together: end-to-end, collaboration with your team or agency, consulting.
+- Contact: hola@savvia.studio

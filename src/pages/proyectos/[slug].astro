@@ -1,0 +1,11 @@
+---
+import Caso from '../../views/Caso.astro';
+import { existe } from '../..//lib/lanzamiento';
+import { proyectos } from '../../data/proyectos';
+
+export function getStaticPaths() {
+  return proyectos.map((p, i) => ({ params: { slug: p.slug }, props: { p, sig: proyectos[(i + 1) % proyectos.length], ant: proyectos[(i - 1 + proyectos.length) % proyectos.length] } })).filter((r) => existe(r.params.slug));
+}
+---
+
+<Caso {...Astro.props} />
